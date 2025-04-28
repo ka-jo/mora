@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",                                  /* Modern JavaScript target. */
+    "module": "ESNext",                                  /* Use ESNext modules for tree-shaking. */
+    "moduleResolution": "node",                         /* Resolve modules in Node.js style. */
+    "strict": true,                                      /* Enable all strict type-checking options. */
+    "esModuleInterop": true,                             /* Enable compatibility with CommonJS modules. */
+    "allowSyntheticDefaultImports": true,               /* Allow default imports from modules without default exports. */
+    "resolveJsonModule": true,                           /* Enable importing JSON files. */
+    "forceConsistentCasingInFileNames": true,            /* Enforce consistent casing in imports. */
+
+    /* Emit */
+    "declaration": true,                                 /* Generate .d.ts files. */
+    "declarationMap": true,                              /* Create sourcemaps for .d.ts files. */
+    "sourceMap": true,                                   /* Create source maps for debugging. */
+    "outDir": "./dist",                                  /* Output directory for compiled files. */
+    "rootDir": "./src",                                  /* Root directory of source files. */
+
+    /* Completeness */
+    "skipLibCheck": true                                 /* Skip type-checking .d.ts files for faster builds. */
+  },
+  "include": ["src"],                                    /* Include source files. */
+  "exclude": ["node_modules", "dist"]                    /* Exclude unnecessary files. */
+}
