@@ -14,12 +14,14 @@
     "declaration": true,                                 /* Generate .d.ts files. */
     "declarationMap": true,                              /* Create sourcemaps for .d.ts files. */
     "sourceMap": true,                                   /* Create source maps for debugging. */
-    "outDir": "./dist",                                  /* Output directory for compiled files. */
-    "rootDir": "./src",                                  /* Root directory of source files. */
 
     /* Completeness */
     "skipLibCheck": true                                 /* Skip type-checking .d.ts files for faster builds. */
   },
-  "include": ["src"],                                    /* Include source files. */
-  "exclude": ["node_modules", "dist"]                    /* Exclude unnecessary files. */
+  "include": ["packages/*/src", "packages/reactivity/api-type-spec.d.ts"],                         
+  "exclude": [
+    "node_modules", 
+    "packages/*/node_modules",
+    "packages/*/dist",
+    ]  
 }

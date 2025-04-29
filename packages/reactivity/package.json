@@ -1,0 +1,19 @@
+{
+    "name": "@mora-js/reactivity",
+    "author": "Kaleb Baldwin",
+    "license": "MIT",
+    "version": "0.0.1",
+    "module": "dist/reactivity.esm.js",
+    "types": "dist/reactivity.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ka-jo/mora",
+        "directory": "packages/reactivity"
+    },
+    "scripts": {
+        "test": "vitest --typecheck"
+    },
+    "dependencies": {
+        "symbol-observable": "^4.0.0"
+    }
+}
