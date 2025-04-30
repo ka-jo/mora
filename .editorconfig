@@ -1,0 +1,4 @@
+[*.ts]
+indent_style = tab
+end_of_line = lf
+print_width = 100
