@@ -1,18 +1,66 @@
 import { $Observable } from "@/common/symbols";
-import { Observable, Subscription } from "@/common/types";
+import { Observable } from "@/common/types";
+import { RefInstance, RefSubscription } from "@/Ref/types";
 
-describe("Observable", () => {
+describe("RefInstance", () => {
+	it("should extend Observable", () => {
+		expectTypeOf<RefInstance<number>>().toExtend<Observable<number>>();
+	});
+
+	describe("TSet type parameter", () => {
+		it("should default to TGet", () => {
+			const ref: RefInstance<number, number> = {} as any;
+			expectTypeOf(ref).toEqualTypeOf<RefInstance<number, number>>();
+		});
+	});
+
+	describe("get method", () => {
+		it("should be a function", () => {
+			expectTypeOf<RefInstance<number>>().toHaveProperty("get").toBeFunction();
+		});
+
+		it("should return the correct type", () => {
+			expectTypeOf<RefInstance<number>>()
+				.toHaveProperty("get")
+				.returns.toEqualTypeOf<number>();
+		});
+
+		it("should accept no arguments", () => {
+			expectTypeOf<RefInstance<any>>()
+				.toHaveProperty("get")
+				.parameters.toEqualTypeOf<[]>();
+		});
+	});
+
+	describe("set method", () => {
+		it("should be a function", () => {
+			expectTypeOf<RefInstance<number>>().toHaveProperty("set").toBeFunction();
+		});
+
+		it("should return void", () => {
+			expectTypeOf<RefInstance<number>>()
+				.toHaveProperty("set")
+				.returns.toEqualTypeOf<void>();
+		});
+
+		it("should accept one argument", () => {
+			expectTypeOf<RefInstance<number>>()
+				.toHaveProperty("set")
+				.parameters.toEqualTypeOf<[number]>();
+		});
+	});
+
 	describe("subscribe method", () => {
 		it("should be a function", () => {
-			expectTypeOf<Observable<number>>()
+			expectTypeOf<RefInstance<number>>()
 				.toHaveProperty("subscribe")
 				.toBeFunction();
 		});
 
-		it("should return Subscription", () => {
-			expectTypeOf<Observable<number>>()
+		it("should return RefSubscription", () => {
+			expectTypeOf<RefInstance<number>>()
 				.toHaveProperty("subscribe")
-				.returns.toEqualTypeOf<Subscription>();
+				.returns.toEqualTypeOf<RefSubscription>();
 		});
 
 		it("should accept an observer", () => {

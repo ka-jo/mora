@@ -1,4 +1,4 @@
 export interface Subscription {
 	unsubscribe(): void;
-	closed: boolean;
+	readonly closed: boolean;
 }

@@ -25,5 +25,11 @@ describe("Subscription", () => {
 				.toHaveProperty("closed")
 				.toEqualTypeOf<boolean>();
 		});
+
+		it("should be readonly", () => {
+			const subscription: Subscription = {} as any;
+			// @ts-expect-error: should not allow assignment
+			subscription.closed = false as any;
+		});
 	});
 });
