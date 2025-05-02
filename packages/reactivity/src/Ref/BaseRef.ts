@@ -28,4 +28,8 @@ export class BaseRef<TGet, TSet = TGet> implements RefInstance<TGet, TSet> {
 	[$Observable](): RefInstance<TGet, TSet> {
 		return this;
 	}
+
+	abort(): void {
+		throw new Error("Method not implemented.");
+	}
 }

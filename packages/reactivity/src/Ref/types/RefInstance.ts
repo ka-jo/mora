@@ -12,4 +12,5 @@ export interface RefInstance<TGet, TSet = TGet> extends Observable<TGet> {
 		onComplete?: Observer<TGet>["complete"]
 	): RefSubscription;
 	[$Observable](): RefInstance<TGet, TSet>;
+	abort(): void;
 }
