@@ -1,6 +1,7 @@
 import { $Observable } from "@/common/symbols";
 import { Observable } from "@/common/types";
-import { RefInstance, RefSubscription } from "@/Ref/types";
+import { RefInstance } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/RefSubscription";
 
 describe("RefInstance", () => {
 	it("should extend Observable", () => {

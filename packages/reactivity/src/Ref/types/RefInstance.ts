@@ -1,6 +1,6 @@
 import { Observable, Observer } from "@/common/types";
 import { $Observable } from "@/common/symbols";
-import { RefSubscription } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/RefSubscription";
 
 export interface RefInstance<TGet, TSet = TGet> extends Observable<TGet> {
 	get(): TGet;

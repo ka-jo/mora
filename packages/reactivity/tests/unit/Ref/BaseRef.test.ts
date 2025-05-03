@@ -1,6 +1,6 @@
 import { $Observable, $RefValue } from "@/common/symbols";
 import { BaseRef } from "@/Ref/BaseRef";
-import { RefSubscription } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/RefSubscription";
 
 describe("BaseRef", () => {
 	describe("constructor", () => {
