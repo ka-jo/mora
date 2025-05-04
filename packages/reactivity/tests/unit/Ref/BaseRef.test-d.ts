@@ -6,9 +6,7 @@ describe("BaseRef", () => {
 	it("should extend RefInstance", () => {
 		// refer to tests/unit/Ref/types/RefInstance.test-d.ts for more details
 		expectTypeOf<BaseRef<number>>().toExtend<RefInstance<number>>();
-		expectTypeOf<BaseRef<number, string>>().toExtend<
-			RefInstance<number, string>
-		>();
+		expectTypeOf<BaseRef<number>>().toExtend<RefInstance<number, number>>();
 	});
 
 	it("should extend Observable", () => {
@@ -26,7 +24,7 @@ describe("BaseRef", () => {
 	describe("TSet type parameter", () => {
 		it("should default to TGet", () => {
 			const ref = new BaseRef(0);
-			expectTypeOf(ref).toEqualTypeOf<BaseRef<number, number>>();
+			expectTypeOf(ref).toEqualTypeOf<BaseRef<number>>();
 		});
 	});
 });

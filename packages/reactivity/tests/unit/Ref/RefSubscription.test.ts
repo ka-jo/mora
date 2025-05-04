@@ -1,22 +1,22 @@
-import { mock, instance, when, verify, anything } from "ts-mockito";
-import { Observer } from "@/common/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
+import { BaseRef } from "@/Ref/BaseRef";
+import { Observer } from "@/common/types";
+import { $subscriptions } from "@/common/symbols";
 
 describe("RefSubscription", () => {
-	let observerSetMock: Set<Observer<unknown>>;
-	let observerMock: Observer<unknown>;
+	let refMock: BaseRef;
+	let observerMock: Observer;
 
 	beforeEach(() => {
-		observerSetMock = mock<Set<Observer<unknown>>>();
-		observerMock = mock<Observer<unknown>>();
+		refMock = { [$subscriptions]: new Set() } as any;
+		observerMock = {
+			next: vi.fn(),
+		} as any;
 	});
 
 	describe("closed property", () => {
 		it("should be readonly", () => {
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				instance(observerMock)
-			);
+			const subscription = new RefSubscription(refMock, observerMock);
 
 			expect(() => {
 				// @ts-expect-error: closed is readonly
@@ -25,134 +25,158 @@ describe("RefSubscription", () => {
 		});
 
 		it("should be false initially", () => {
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				instance(observerMock)
-			);
+			const subscription = new RefSubscription(refMock, observerMock);
 
 			expect(subscription.closed).toBe(false);
 		});
 	});
 
-	describe("isEnabled property", () => {
+	describe("enabled property", () => {
 		it("should be readonly", () => {
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				instance(observerMock)
-			);
+			const subscription = new RefSubscription(refMock, observerMock);
 
 			expect(() => {
 				// @ts-expect-error: isEnabled is readonly
-				subscription.isEnabled = false;
+				subscription.enabled = false;
 			}).toThrow(TypeError);
 		});
 
-		it("should be true if the observer is in the observers set", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(true);
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
-			expect(subscription.isEnabled).toBe(true);
-		});
-
-		it("should be false if the observer is not in the observers set", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(false);
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
-			expect(subscription.isEnabled).toBe(false);
+		it("should be true initially", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+			expect(subscription.enabled).toBe(true);
 		});
 	});
 
 	describe("unsubscribe method", () => {
-		it("should remove the observer from the observers set", () => {
-			const observer = instance(observerMock);
-
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
-
-			subscription.unsubscribe();
-
-			verify(observerSetMock.delete(observer)).once();
-		});
-
 		it("should set closed to true", () => {
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				instance(observerMock)
-			);
+			const subscription = new RefSubscription(refMock, observerMock);
 
 			subscription.unsubscribe();
 
 			expect(subscription.closed).toBe(true);
 		});
+
+		it("should set enabled to false", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			subscription.unsubscribe();
+
+			expect(subscription.enabled).toBe(false);
+		});
+
+		it("should return undefined", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+			const result = subscription.unsubscribe();
+			expect(result).toBeUndefined();
+		});
+
+		it("should not throw an error when called multiple times", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			expect(() => {
+				subscription.unsubscribe();
+				subscription.unsubscribe();
+			}).not.toThrowError();
+		});
 	});
 
 	describe("enable method", () => {
-		it("should add the observer to the observers set if not already present", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(false);
-
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
-
-			subscription.enable();
-
-			// The RefSubscription constructor calls add in addition to enable
-			verify(observerSetMock.add(observer)).twice();
+		it("should return undefined", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+			const result = subscription.enable();
+			expect(result).toBeUndefined();
 		});
 
-		it("should not add the observer to the observers set if already present", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(true);
+		it("should not throw an error when called multiple times", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
 
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
+			expect(() => {
+				subscription.enable();
+				subscription.enable();
+			}).not.toThrowError();
+		});
+
+		it("should set enabled to true", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			subscription.disable();
+
+			expect(subscription.enabled).toBe(false);
 
 			subscription.enable();
 
-			// The RefSubscription constructor calls add
-			verify(observerSetMock.add(anything())).once();
+			expect(subscription.enabled).toBe(true);
 		});
 	});
 
 	describe("disable method", () => {
-		it("should remove the observer from the observers set if present", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(true);
-
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
-
-			subscription.disable();
-
-			verify(observerSetMock.delete(observer)).once();
+		it("should return undefined", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+			const result = subscription.disable();
+			expect(result).toBeUndefined();
 		});
 
-		it("should not remove the observer from the observers set if not present", () => {
-			const observer = instance(observerMock);
-			when(observerSetMock.has(observer)).thenReturn(false);
+		it("should not throw an error when called multiple times", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
 
-			const subscription = new RefSubscription(
-				instance(observerSetMock),
-				observer
-			);
+			expect(() => {
+				subscription.disable();
+				subscription.disable();
+			}).not.toThrowError();
+		});
+
+		it("should set enabled to false", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
 
 			subscription.disable();
 
-			verify(observerSetMock.delete(anything())).never();
+			expect(subscription.enabled).toBe(false);
+		});
+	});
+
+	describe("static notify method", () => {
+		it("should return undefined", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			const result = RefSubscription.notify(subscription, "test");
+
+			expect(result).toBeUndefined();
+		});
+
+		it("should call observer's next method when subscription is enabled", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			subscription.enable();
+
+			expect(subscription.enabled).toBe(true);
+
+			RefSubscription.notify(subscription, "test");
+
+			expect(observerMock.next).toHaveBeenCalledWith("test");
+		});
+
+		it("should not call observer's next method when subscription is disabled", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			subscription.disable();
+
+			expect(subscription.enabled).toBe(false);
+
+			RefSubscription.notify(subscription, "test");
+
+			expect(observerMock.next).not.toHaveBeenCalled();
+		});
+
+		it("should not call observer's next method when subscription is closed", () => {
+			const subscription = new RefSubscription(refMock, observerMock);
+
+			subscription.unsubscribe();
+
+			expect(subscription.closed).toBe(true);
+
+			RefSubscription.notify(subscription, "test");
+
+			expect(observerMock.next).not.toHaveBeenCalled();
 		});
 	});
 });

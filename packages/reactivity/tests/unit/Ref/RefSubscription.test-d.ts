@@ -47,14 +47,14 @@ describe("RefSubscription", () => {
 	describe("isEnabled property", () => {
 		it("should be a boolean", () => {
 			expectTypeOf<RefSubscription>()
-				.toHaveProperty("isEnabled")
+				.toHaveProperty("enabled")
 				.toEqualTypeOf<boolean>();
 		});
 
 		it("should be readonly", () => {
 			const refSubscription: RefSubscription = {} as any;
 			// @ts-expect-error: should not allow assignment
-			refSubscription.isEnabled = false as any;
+			refSubscription.enabled = false as any;
 		});
 	});
 });

@@ -1,40 +1,64 @@
 import { Observer } from "@/common/types";
-import { $Observable, $RefValue } from "@/common/symbols";
+import {
+	$observable,
+	$value,
+	$subscriptions,
+	$flags,
+	$ref,
+} from "@/common/symbols";
 import { createObserver } from "@/common/util";
+import { Flags } from "@/common/flags";
 import { RefInstance } from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
 
-export class BaseRef<TGet, TSet = TGet> implements RefInstance<TGet, TSet> {
-	private readonly _observers: Set<Observer<TGet>> = new Set();
-	[$RefValue]: TGet;
+export class BaseRef<T = unknown> implements RefInstance<T, T> {
+	[$subscriptions]: Set<RefSubscription> = new Set();
+	[$flags]: number = 0;
+	[$value]: T;
+	[$ref]: BaseRef<T>;
 
-	constructor(value: TGet) {
-		this[$RefValue] = value;
+	constructor(value: T) {
+		this[$value] = value;
+		this[$ref] = this;
 	}
 
-	get(): TGet {
-		throw new Error("Method not implemented.");
+	get(): T {
+		return this[$value];
 	}
 
-	set(value: TSet): void {
-		throw new Error("Method not implemented.");
+	set(value: T): void {
+		if (this[$value] === value) return;
+
+		this[$value] = value;
+		for (const sub of this[$subscriptions]) {
+			RefSubscription.notify(sub, value);
+		}
 	}
 
 	subscribe(
-		onNextOrObserver: Partial<Observer<TGet>> | Observer<TGet>["next"],
-		onError?: Observer<TGet>["error"],
-		onComplete?: Observer<TGet>["complete"]
+		onNextOrObserver: Partial<Observer<T>> | Observer<T>["next"],
+		onError?: Observer<T>["error"],
+		onComplete?: Observer<T>["complete"]
 	): RefSubscription {
 		const observer = createObserver(onNextOrObserver, onError, onComplete);
 
-		return new RefSubscription(this._observers, observer);
+		if (this[$flags] & Flags.Aborted) {
+			observer.complete();
+			return RefSubscription.CLOSED_SUBSCRIPTION;
+		}
+
+		return new RefSubscription(this, observer);
 	}
 
-	[$Observable](): RefInstance<TGet, TSet> {
+	[$observable](): RefInstance<T, T> {
 		return this;
 	}
 
 	abort(): void {
-		throw new Error("Method not implemented.");
+		for (const sub of this[$subscriptions]) {
+			RefSubscription.cleanup(sub);
+		}
+		this[$flags] |= Flags.Aborted;
+		this[$subscriptions] = null as any;
 	}
 }

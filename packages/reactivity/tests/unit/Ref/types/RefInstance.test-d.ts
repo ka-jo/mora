@@ -1,4 +1,4 @@
-import { $Observable } from "@/common/symbols";
+import { $observable } from "@/common/symbols";
 import { Observable } from "@/common/types";
 import { RefInstance } from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
@@ -113,13 +113,13 @@ describe("RefInstance", () => {
 	describe("[$Observable] method", () => {
 		it("should be a function", () => {
 			expectTypeOf<Observable<number>>()
-				.toHaveProperty($Observable)
+				.toHaveProperty($observable)
 				.toBeFunction();
 		});
 
 		it("should return Observable", () => {
 			expectTypeOf<Observable<number>>()
-				.toHaveProperty($Observable)
+				.toHaveProperty($observable)
 				.returns.toEqualTypeOf<Observable<number>>();
 		});
 	});

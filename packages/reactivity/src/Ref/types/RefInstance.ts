@@ -1,5 +1,5 @@
 import { Observable, Observer } from "@/common/types";
-import { $Observable } from "@/common/symbols";
+import { $observable } from "@/common/symbols";
 import { RefSubscription } from "@/Ref/RefSubscription";
 
 export interface RefInstance<TGet, TSet = TGet> extends Observable<TGet> {
@@ -11,6 +11,6 @@ export interface RefInstance<TGet, TSet = TGet> extends Observable<TGet> {
 		onError?: Observer<TGet>["error"],
 		onComplete?: Observer<TGet>["complete"]
 	): RefSubscription;
-	[$Observable](): RefInstance<TGet, TSet>;
+	[$observable](): RefInstance<TGet, TSet>;
 	abort(): void;
 }
