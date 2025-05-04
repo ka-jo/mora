@@ -46,7 +46,7 @@ export class RefSubscription implements Subscription {
 		this[$flags] &= ~Flags.Enabled;
 	}
 
-	static readonly CLOSED_SUBSCRIPTION: RefSubscription = Object.freeze({
+	private static readonly CLOSED_SUBSCRIPTION: RefSubscription = Object.freeze({
 		[$flags]: Flags.Aborted,
 		unsubscribe: noop,
 		enable: noop,
@@ -55,10 +55,25 @@ export class RefSubscription implements Subscription {
 		enabled: false,
 	}) as RefSubscription;
 
+	static init(ref: BaseRef, observer: Observer): RefSubscription {
+		if (ref[$flags] & Flags.Aborted) {
+			observer.complete();
+			return RefSubscription.CLOSED_SUBSCRIPTION;
+		}
+		const subscription = new RefSubscription(ref, observer);
+		ref[$subscriptions].add(subscription);
+		return subscription;
+	}
+
 	static notify(subscription: RefSubscription, value: unknown) {
 		if (subscription[$flags] & Flags.Enabled) {
 			subscription[$observer].next(value);
 		}
+	}
+
+	static complete(subscription: RefSubscription) {
+		subscription[$observer].complete();
+		RefSubscription.cleanup(subscription);
 	}
 
 	static cleanup(subscription: RefSubscription) {

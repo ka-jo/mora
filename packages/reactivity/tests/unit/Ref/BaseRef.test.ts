@@ -139,7 +139,7 @@ describe("BaseRef", () => {
 		});
 	});
 
-	describe("[$Observable] method", () => {
+	describe("[$observable] method", () => {
 		it("should return the instance itself", () => {
 			const ref = new BaseRef(0);
 
@@ -156,7 +156,7 @@ describe("BaseRef", () => {
 			expect(result).toBeUndefined();
 		});
 
-		it("should trigger complete callback", () => {
+		it("should trigger complete callback for observers", () => {
 			const ref = new BaseRef(0);
 			const completeCallback = vi.fn();
 			ref.subscribe({ complete: completeCallback });
@@ -194,6 +194,54 @@ describe("BaseRef", () => {
 			const subscription = ref.subscribe(nextCallback);
 
 			ref.abort();
+
+			expect(subscription.enabled).toBe(false);
+		});
+	});
+
+	describe("supports AbortSignal", () => {
+		it("should trigger complete callback for observers when aborted", () => {
+			const controller = new AbortController();
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const completeCallback = vi.fn();
+			ref.subscribe({ complete: completeCallback });
+
+			controller.abort();
+
+			expect(completeCallback).toHaveBeenCalled();
+		});
+
+		it("should prevent further notifications to observers", () => {
+			const controller = new AbortController();
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			controller.abort();
+
+			ref.set(1);
+
+			expect(nextCallback).not.toHaveBeenCalled();
+		});
+
+		it("should set closed to true for all subscriptions", () => {
+			const controller = new AbortController();
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			controller.abort();
+
+			expect(subscription.closed).toBe(true);
+		});
+
+		it("should set enabled to false for all subscriptions", () => {
+			const controller = new AbortController();
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			controller.abort();
 
 			expect(subscription.enabled).toBe(false);
 		});

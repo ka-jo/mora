@@ -8,18 +8,26 @@ import {
 } from "@/common/symbols";
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
-import { RefInstance } from "@/Ref/types";
+import { RefInstance, RefOptions } from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
+
+const $options = Symbol("options");
 
 export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	[$subscriptions]: Set<RefSubscription> = new Set();
 	[$flags]: number = 0;
 	[$value]: T;
 	[$ref]: BaseRef<T>;
+	[$options]?: RefOptions;
 
-	constructor(value: T) {
+	constructor(value: T, options?: RefOptions) {
 		this[$value] = value;
 		this[$ref] = this;
+		this[$options] = options;
+		if (options?.signal) {
+			this.abort = this.abort.bind(this);
+			options.signal.addEventListener("abort", this.abort);
+		}
 	}
 
 	get(): T {
@@ -30,6 +38,9 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 		if (this[$value] === value) return;
 
 		this[$value] = value;
+
+		if (this[$flags] & Flags.Aborted) return;
+
 		for (const sub of this[$subscriptions]) {
 			RefSubscription.notify(sub, value);
 		}
@@ -42,12 +53,7 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	): RefSubscription {
 		const observer = createObserver(onNextOrObserver, onError, onComplete);
 
-		if (this[$flags] & Flags.Aborted) {
-			observer.complete();
-			return RefSubscription.CLOSED_SUBSCRIPTION;
-		}
-
-		return new RefSubscription(this, observer);
+		return RefSubscription.init(this, observer);
 	}
 
 	[$observable](): RefInstance<T, T> {
@@ -56,9 +62,12 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 
 	abort(): void {
 		for (const sub of this[$subscriptions]) {
-			RefSubscription.cleanup(sub);
+			RefSubscription.complete(sub);
 		}
 		this[$flags] |= Flags.Aborted;
 		this[$subscriptions] = null as any;
+		if (this[$options]?.signal) {
+			this[$options].signal.removeEventListener("abort", this.abort);
+		}
 	}
 }
