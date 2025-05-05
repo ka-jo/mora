@@ -5,5 +5,6 @@ export default defineProject({
 	plugins: [tsconfigPaths()],
 	test: {
 		globals: true,
+		setupFiles: ["./tests/fixtures/expect/toBeRef.ts"],
 	},
 });
