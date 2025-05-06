@@ -13,7 +13,7 @@ describe("ComputedRef", () => {
 	});
 
 	describe("get method", () => {
-		it("should call the get function on initial get", () => {
+		it("should call the getter on initial get", () => {
 			const getFn = vi.fn(() => 0);
 			const ref = new ComputedRef({ get: getFn });
 
@@ -31,34 +31,34 @@ describe("ComputedRef", () => {
 		});
 
 		it("should return the cached value if not dirty", () => {
-			const ref = new ComputedRef({ get: () => 42 });
+			const getter = vi.fn(() => 42);
+			const ref = new ComputedRef({ get: getter });
 
 			ref[$value] = 42; // Simulate cached value
 			ref[$flags] = 0; // Simulate not dirty
 
 			const result = ref.get();
 
+			expect(getter).not.toHaveBeenCalled(); // Ensure the getter is not called
 			expect(result).toBe(42);
 		});
 
 		it("should call the get function if dirty", () => {
-			const getFn = vi.fn(() => 42);
-			const ref = new ComputedRef({ get: getFn });
+			const getter = vi.fn(() => 42);
+			const ref = new ComputedRef({ get: getter });
 
-			ref.get();
-
-			expect(getFn).toHaveBeenCalledTimes(1);
-
+			ref[$value] = 27; // Simulate cached value
 			ref[$flags] = Flags.Dirty; // Simulate dirty
 
-			ref.get();
-
-			expect(getFn).toHaveBeenCalledTimes(2);
+			const result = ref.get();
+			// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
+			expect(getter).toHaveBeenCalled();
+			expect(result).toBe(42);
 		});
 	});
 
 	describe("set method", () => {
-		it("should throw an error if set not defined", () => {
+		it("should throw an error if setter not defined", () => {
 			const ref = new ComputedRef({ get: () => 0 });
 
 			expect(() => ref.set(1)).toThrow(TypeError);
@@ -72,7 +72,7 @@ describe("ComputedRef", () => {
 			expect(result).toBeUndefined();
 		});
 
-		it("should call the set function", () => {
+		it("should call setter", () => {
 			const setFn = vi.fn();
 			const ref = new ComputedRef({ get: () => 0, set: setFn });
 
@@ -264,5 +264,16 @@ describe("ComputedRef", () => {
 
 			expect(subscription.enabled).toBe(false);
 		});
+	});
+
+	it("should not call getter until first access", () => {
+		const getter = vi.fn(() => 42);
+		const ref = new ComputedRef({ get: getter });
+
+		expect(getter).not.toHaveBeenCalled();
+
+		ref.get();
+
+		expect(getter).toHaveBeenCalled();
 	});
 });
