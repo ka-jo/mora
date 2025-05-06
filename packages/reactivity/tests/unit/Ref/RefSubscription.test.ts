@@ -1,14 +1,14 @@
 import { RefSubscription } from "@/Ref/RefSubscription";
 import { BaseRef } from "@/Ref/BaseRef";
 import { Observer } from "@/common/types";
-import { $subscriptions } from "@/common/symbols";
+import { $subscribers } from "@/common/symbols";
 
 describe("RefSubscription", () => {
 	let refMock: BaseRef;
 	let observerMock: Observer;
 
 	beforeEach(() => {
-		refMock = { [$subscriptions]: new Set() } as any;
+		refMock = { [$subscribers]: new Set() } as any;
 		observerMock = {
 			next: vi.fn(),
 		} as any;
@@ -138,7 +138,7 @@ describe("RefSubscription", () => {
 		it("should return undefined", () => {
 			const subscription = new RefSubscription(refMock, observerMock);
 
-			const result = RefSubscription.notify(subscription, "test");
+			const result = RefSubscription.notifyNext(subscription, "test");
 
 			expect(result).toBeUndefined();
 		});
@@ -150,7 +150,7 @@ describe("RefSubscription", () => {
 
 			expect(subscription.enabled).toBe(true);
 
-			RefSubscription.notify(subscription, "test");
+			RefSubscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).toHaveBeenCalledWith("test");
 		});
@@ -162,7 +162,7 @@ describe("RefSubscription", () => {
 
 			expect(subscription.enabled).toBe(false);
 
-			RefSubscription.notify(subscription, "test");
+			RefSubscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).not.toHaveBeenCalled();
 		});
@@ -174,7 +174,7 @@ describe("RefSubscription", () => {
 
 			expect(subscription.closed).toBe(true);
 
-			RefSubscription.notify(subscription, "test");
+			RefSubscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).not.toHaveBeenCalled();
 		});

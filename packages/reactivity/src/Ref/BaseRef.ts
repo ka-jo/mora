@@ -2,19 +2,19 @@ import { Observer } from "@/common/types";
 import {
 	$observable,
 	$value,
-	$subscriptions,
+	$subscribers,
 	$flags,
 	$ref,
+	$options,
 } from "@/common/symbols";
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { RefInstance, RefOptions } from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
-
-const $options = Symbol("options");
+import { track } from "@/common/tracking-context";
 
 export class BaseRef<T = unknown> implements RefInstance<T, T> {
-	[$subscriptions]: Set<RefSubscription> = new Set();
+	[$subscribers]: Set<RefSubscription> = new Set();
 	[$flags]: number = 0;
 	[$value]: T;
 	[$ref]: BaseRef<T>;
@@ -31,6 +31,9 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	}
 
 	get(): T {
+		if (!(this[$flags] & Flags.Aborted)) {
+			track(this);
+		}
 		return this[$value];
 	}
 
@@ -41,8 +44,8 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 
 		if (this[$flags] & Flags.Aborted) return;
 
-		for (const sub of this[$subscriptions]) {
-			RefSubscription.notify(sub, value);
+		for (const sub of this[$subscribers]) {
+			RefSubscription.notifyNext(sub, value);
 		}
 	}
 
@@ -61,11 +64,11 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	}
 
 	abort(): void {
-		for (const sub of this[$subscriptions]) {
-			RefSubscription.complete(sub);
+		for (const sub of this[$subscribers]) {
+			RefSubscription.notifyComplete(sub);
 		}
 		this[$flags] |= Flags.Aborted;
-		this[$subscriptions] = null as any;
+		this[$subscribers] = null as any;
 		if (this[$options]?.signal) {
 			this[$options].signal.removeEventListener("abort", this.abort);
 		}

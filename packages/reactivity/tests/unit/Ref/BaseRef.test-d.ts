@@ -14,15 +14,8 @@ describe("BaseRef", () => {
 		expectTypeOf<BaseRef<number>>().toExtend<Observable<number>>();
 	});
 
-	describe("TGet type parameter", () => {
+	describe("T type parameter", () => {
 		it("should be inferred from constructor argument", () => {
-			const ref = new BaseRef(0);
-			expectTypeOf(ref).toEqualTypeOf<BaseRef<number>>();
-		});
-	});
-
-	describe("TSet type parameter", () => {
-		it("should default to TGet", () => {
 			const ref = new BaseRef(0);
 			expectTypeOf(ref).toEqualTypeOf<BaseRef<number>>();
 		});

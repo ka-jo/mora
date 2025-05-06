@@ -1,0 +1,268 @@
+import { Flags } from "@/common/flags";
+import { $flags, $observable, $value } from "@/common/symbols";
+import { ComputedRef } from "@/Ref/ComputedRef";
+import { RefSubscription } from "@/Ref/RefSubscription";
+
+describe("ComputedRef", () => {
+	describe("constructor", () => {
+		it("should return an instance of ComputedRef", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+
+			expect(ref).toBeInstanceOf(ComputedRef);
+		});
+	});
+
+	describe("get method", () => {
+		it("should call the get function on initial get", () => {
+			const getFn = vi.fn(() => 0);
+			const ref = new ComputedRef({ get: getFn });
+
+			ref.get();
+
+			expect(getFn).toHaveBeenCalled();
+		});
+
+		it("should return the value from the get function", () => {
+			const ref = new ComputedRef({ get: () => 42 });
+
+			const result = ref.get();
+
+			expect(result).toBe(42);
+		});
+
+		it("should return the cached value if not dirty", () => {
+			const ref = new ComputedRef({ get: () => 42 });
+
+			ref[$value] = 42; // Simulate cached value
+			ref[$flags] = 0; // Simulate not dirty
+
+			const result = ref.get();
+
+			expect(result).toBe(42);
+		});
+
+		it("should call the get function if dirty", () => {
+			const getFn = vi.fn(() => 42);
+			const ref = new ComputedRef({ get: getFn });
+
+			ref.get();
+
+			expect(getFn).toHaveBeenCalledTimes(1);
+
+			ref[$flags] = Flags.Dirty; // Simulate dirty
+
+			ref.get();
+
+			expect(getFn).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe("set method", () => {
+		it("should throw an error if set not defined", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+
+			expect(() => ref.set(1)).toThrow(TypeError);
+		});
+
+		it("should return undefined", () => {
+			const ref = new ComputedRef({ get: () => 0, set: () => {} });
+
+			const result = ref.set(1);
+
+			expect(result).toBeUndefined();
+		});
+
+		it("should call the set function", () => {
+			const setFn = vi.fn();
+			const ref = new ComputedRef({ get: () => 0, set: setFn });
+
+			ref.set(1);
+
+			expect(setFn).toHaveBeenCalledWith(1);
+		});
+	});
+
+	describe("subscribe method", () => {
+		it("should be callable with an observer", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const errorCallback = vi.fn();
+			const completeCallback = vi.fn();
+
+			expect(() => {
+				ref.subscribe({
+					next: nextCallback,
+					error: errorCallback,
+					complete: completeCallback,
+				});
+			}).not.toThrowError();
+		});
+
+		it("should be callable with a next function", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+
+			expect(() => {
+				ref.subscribe(nextCallback);
+			}).not.toThrowError();
+		});
+
+		it("should be callable with a next function and an error function", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const errorCallback = vi.fn();
+
+			expect(() => {
+				ref.subscribe(nextCallback, errorCallback);
+			}).not.toThrowError();
+		});
+
+		it("should be callable with a next function, an error function, and a complete function", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const errorCallback = vi.fn();
+			const completeCallback = vi.fn();
+
+			expect(() => {
+				ref.subscribe(nextCallback, errorCallback, completeCallback);
+			}).not.toThrowError();
+		});
+
+		it("should be callable with a next function and a complete function, but no error function", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const completeCallback = vi.fn();
+			expect(() => {
+				ref.subscribe(nextCallback, undefined, completeCallback);
+			}).not.toThrowError();
+		});
+
+		it("should return a RefSubscription instance", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+
+			const subscription = ref.subscribe(nextCallback);
+
+			expect(subscription).toBeInstanceOf(RefSubscription);
+		});
+
+		it("should immediately trigger complete if the ref is aborted", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const completeCallback = vi.fn();
+
+			ref.abort();
+
+			ref.subscribe({ complete: completeCallback });
+
+			expect(completeCallback).toHaveBeenCalled();
+		});
+	});
+
+	describe("[$observable] method", () => {
+		it("should return the instance itself", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+
+			expect(ref[$observable]()).toBe(ref);
+		});
+	});
+
+	describe("abort method", () => {
+		it("should return void", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+
+			const result = ref.abort();
+
+			expect(result).toBeUndefined();
+		});
+
+		it("should trigger complete callback for observers", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const completeCallback = vi.fn();
+			ref.subscribe({ complete: completeCallback });
+
+			ref.abort();
+
+			expect(completeCallback).toHaveBeenCalled();
+		});
+
+		it("should prevent further notifications to observers", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			ref.abort();
+
+			ref.set(1);
+
+			expect(nextCallback).not.toHaveBeenCalled();
+		});
+
+		it("should set closed to true for all subscriptions", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			ref.abort();
+
+			expect(subscription.closed).toBe(true);
+		});
+
+		it("should set enabled to false for all subscriptions", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			ref.abort();
+
+			expect(subscription.enabled).toBe(false);
+		});
+	});
+
+	describe("supports AbortSignal", () => {
+		it("should trigger complete callback for observers when aborted", () => {
+			const controller = new AbortController();
+			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const completeCallback = vi.fn();
+			ref.subscribe({ complete: completeCallback });
+
+			controller.abort();
+
+			expect(completeCallback).toHaveBeenCalled();
+		});
+
+		it("should prevent further notifications to observers", () => {
+			const controller = new AbortController();
+			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			controller.abort();
+
+			ref.set(1);
+
+			expect(nextCallback).not.toHaveBeenCalled();
+		});
+
+		it("should set closed to true for all subscriptions", () => {
+			const controller = new AbortController();
+			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			controller.abort();
+
+			expect(subscription.closed).toBe(true);
+		});
+
+		it("should set enabled to false for all subscriptions", () => {
+			const controller = new AbortController();
+			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const nextCallback = vi.fn();
+			const subscription = ref.subscribe(nextCallback);
+
+			controller.abort();
+
+			expect(subscription.enabled).toBe(false);
+		});
+	});
+});
