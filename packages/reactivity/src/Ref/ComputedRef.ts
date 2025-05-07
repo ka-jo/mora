@@ -16,12 +16,18 @@ import {
 	track,
 } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
-import { RefInstance, ComputedRefOptions } from "@/Ref/types";
+import {
+	RefInstance,
+	ComputedRefOptions,
+	WritableComputedRefOptions,
+} from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
 import { createObserver } from "@/common/util";
 import { Dependency } from "@/common/Dependency";
 
-const $observer = Symbol("observer");
+const $observer: unique symbol = Symbol("observer");
+/** We use this to mark a ref that hasn't been computed yet. */
+const INITIAL_VALUE: any = $value;
 
 export class ComputedRef<TGet = unknown, TSet = TGet>
 	implements RefInstance<TGet, TSet>
@@ -30,14 +36,15 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	[$dependencies]: Array<Dependency> = [];
 	[$flags]: number;
 	[$version]: number = 0;
-	// We use the $value symbol as a marker that the ref hasn't been computed yet
-	[$value]: TGet = $value as any;
+	[$value]: TGet = INITIAL_VALUE;
 	[$ref]: ComputedRef<TGet, TSet>;
-	[$options]: ComputedRefOptions<TGet, TSet>;
+	[$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
 	[$observer]: Partial<Observer>;
 	[$compute]: () => void;
 
-	constructor(options: ComputedRefOptions<TGet, TSet>) {
+	constructor(
+		options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>
+	) {
 		this[$flags] = Flags.Dirty;
 		this[$options] = options;
 		this[$ref] = this;
@@ -66,7 +73,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	set(value: TSet): void {
 		if (this[$flags] & Flags.Aborted) return;
 
-		if (!this[$options].set)
+		if (!("set" in this[$options]))
 			throw new TypeError("Cannot set a computed ref defined without a setter");
 
 		this[$options].set(value);
@@ -77,9 +84,22 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 		onError?: Observer<TGet>["error"],
 		onComplete?: Observer<TGet>["complete"]
 	): RefSubscription {
-		const observer = createObserver(onNextOrObserver, onError, onComplete);
+		// If the ref hasn't been computed yet, we need to compute the current value
+		// in order to notify the subscriber of future values
+		if (this[$value] === INITIAL_VALUE && !(this[$flags] & Flags.Aborted))
+			try {
+				ComputedRef.compute(this);
+			} catch (e) {
+				// As much as possible, the compute triggered in this case should be
+				// "invisible". The subscriber should be able to think of the ref as
+				// already having a value, and they're subscribing to future changes.
+				// Only calls to `get` should throw, so we swallow the error here.
+			}
 
-		return RefSubscription.init(this, observer);
+		return RefSubscription.init(
+			this,
+			createObserver(onNextOrObserver, onError, onComplete)
+		);
 	}
 
 	[$observable]() {
@@ -100,15 +120,14 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	private static compute(ref: ComputedRef<any>): void {
-		// If the dirty flag is not set by the time we reach this point, it means `get`
-		// was called before the microtask queue was flushed and it was already computed
+		// A ref may have been queued to compute, but was computed before the queue was flushed.
+		// This would be the case if `get` was called on the ref or a dependency of the ref
 		if (!(ref[$flags] & Flags.Dirty)) return;
 
 		ref[$flags] &= ~(Flags.Dirty | Flags.Queued);
 
 		if (
-			// We use the $value symbol as a marker that the ref hasn't been computed yet
-			ref[$value] !== $value &&
+			ref[$value] !== INITIAL_VALUE &&
 			!ComputedRef.hasOutdatedDependenciesAfterCompute(ref)
 		)
 			return;
@@ -116,12 +135,16 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 		ComputedRef.unsubscribeFromDependencies(ref);
 
 		pushTrackingContext();
-		ref[$value] = ComputedRef.tryGet(ref);
+		const computedValue = ComputedRef.tryGet(ref);
 		ref[$dependencies] = ComputedRef.initializeDependencies(
 			ref[$observer],
 			popTrackingContext()!
 		);
-		ref[$version]++;
+		if (computedValue !== ref[$value]) {
+			ref[$value] = computedValue;
+			ref[$version]++;
+			RefSubscription.notifyAllNext(ref[$subscribers], computedValue);
+		}
 	}
 
 	/**
@@ -189,6 +212,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 		try {
 			return ref[$options].get();
 		} catch (e) {
+			// We didn't get a value, so the ref should still be marked dirty
+			ref[$flags] |= Flags.Dirty;
+
 			if (e instanceof Error === false) e = new Error(String(e));
 
 			RefSubscription.notifyAllError(ref[$subscribers], e as Error);

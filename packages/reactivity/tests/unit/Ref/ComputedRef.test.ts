@@ -1,5 +1,7 @@
+import { Dependency } from "@/common/Dependency";
 import { Flags } from "@/common/flags";
-import { $flags, $observable, $value } from "@/common/symbols";
+import { $dependencies, $flags, $observable, $value } from "@/common/symbols";
+import { Observable } from "@/common/types";
 import { ComputedRef } from "@/Ref/ComputedRef";
 import { RefSubscription } from "@/Ref/RefSubscription";
 
@@ -43,17 +45,39 @@ describe("ComputedRef", () => {
 			expect(result).toBe(42);
 		});
 
-		it("should call the get function if dirty", () => {
-			const getter = vi.fn(() => 42);
-			const ref = new ComputedRef({ get: getter });
+		describe("when the ref is dirty", () => {
+			it("should call the getter if any dependencies are outdated", () => {
+				const getter = vi.fn(() => 42);
+				const ref = new ComputedRef({ get: getter });
 
-			ref[$value] = 27; // Simulate cached value
-			ref[$flags] = Flags.Dirty; // Simulate dirty
+				ref[$value] = 27;
+				ref[$flags] = Flags.Dirty;
+				ref[$dependencies] = [
+					{
+						isOutdated: true,
+						subscription: { unsubscribe: () => {} },
+					} as Dependency,
+				];
 
-			const result = ref.get();
-			// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
-			expect(getter).toHaveBeenCalled();
-			expect(result).toBe(42);
+				const result = ref.get();
+				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
+				expect(getter).toHaveBeenCalled();
+				expect(result).toBe(42);
+			});
+
+			it("should not call the getter if no dependencies are outdated", () => {
+				const getter = vi.fn(() => 42);
+				const ref = new ComputedRef({ get: getter });
+
+				ref[$value] = 27;
+				ref[$flags] = Flags.Dirty;
+				ref[$dependencies] = [{ isOutdated: false } as Dependency];
+
+				const result = ref.get();
+				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
+				expect(getter).not.toHaveBeenCalled();
+				expect(result).toBe(27);
+			});
 		});
 	});
 

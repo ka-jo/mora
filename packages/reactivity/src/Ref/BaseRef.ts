@@ -48,9 +48,7 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 
 		this[$version]++;
 
-		for (const sub of this[$subscribers]) {
-			RefSubscription.notifyNext(sub, value);
-		}
+		RefSubscription.notifyAllNext(this[$subscribers], value);
 	}
 
 	subscribe(
@@ -68,9 +66,7 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	}
 
 	abort(): void {
-		for (const sub of this[$subscribers]) {
-			RefSubscription.notifyComplete(sub);
-		}
+		RefSubscription.notifyAllComplete(this[$subscribers]);
 		this[$flags] |= Flags.Aborted;
 		this[$subscribers] = null as any;
 		if (this[$options]?.signal) {
