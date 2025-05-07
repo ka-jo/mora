@@ -7,27 +7,31 @@ import {
 	$value,
 	$dependencies,
 	$observable,
+	$version,
+	$compute,
 } from "@/common/symbols";
 import {
 	popTrackingContext,
 	pushTrackingContext,
 	track,
 } from "@/common/tracking-context";
-import { Observer, Subscription } from "@/common/types";
+import { Observable, Observer } from "@/common/types";
 import { RefInstance, ComputedRefOptions } from "@/Ref/types";
 import { RefSubscription } from "@/Ref/RefSubscription";
 import { createObserver } from "@/common/util";
+import { Dependency } from "@/common/Dependency";
 
 const $observer = Symbol("observer");
-const $compute = Symbol("compute");
 
 export class ComputedRef<TGet = unknown, TSet = TGet>
 	implements RefInstance<TGet, TSet>
 {
 	[$subscribers]: Set<RefSubscription> = new Set();
-	[$dependencies]: Array<Subscription> = [];
+	[$dependencies]: Array<Dependency> = [];
 	[$flags]: number;
-	[$value]?: TGet;
+	[$version]: number = 0;
+	// We use the $value symbol as a marker that the ref hasn't been computed yet
+	[$value]: TGet = $value as any;
 	[$ref]: ComputedRef<TGet, TSet>;
 	[$options]: ComputedRefOptions<TGet, TSet>;
 	[$observer]: Partial<Observer>;
@@ -37,9 +41,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 		this[$flags] = Flags.Dirty;
 		this[$options] = options;
 		this[$ref] = this;
-		this[$observer] = {
-			next: ComputedRef.onDependencyChange.bind(ComputedRef, this),
-		};
+		this[$observer] = ComputedRef.initObserver(this);
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
 		if (options.signal) {
 			this.abort = this.abort.bind(this);
@@ -85,12 +87,10 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	abort(): void {
-		for (const dep of this[$dependencies]) {
-			dep.unsubscribe();
-		}
-		for (const sub of this[$subscribers]) {
-			RefSubscription.notifyComplete(sub);
-		}
+		ComputedRef.unsubscribeFromDependencies(this);
+
+		RefSubscription.notifyAllComplete(this[$subscribers]);
+
 		this[$flags] |= Flags.Aborted;
 		this[$subscribers] = null as any;
 		this[$dependencies] = null as any;
@@ -101,41 +101,118 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 	private static compute(ref: ComputedRef<any>): void {
 		// If the dirty flag is not set by the time we reach this point, it means `get`
-		// was called before the microtask queue was flushed, and it was already computed
+		// was called before the microtask queue was flushed and it was already computed
 		if (!(ref[$flags] & Flags.Dirty)) return;
 
-		ref[$flags] &= ~Flags.Dirty;
-		ref[$flags] &= ~Flags.Queued;
+		ref[$flags] &= ~(Flags.Dirty | Flags.Queued);
 
-		for (const dep of ref[$dependencies]) {
-			dep.unsubscribe();
-		}
+		if (
+			// We use the $value symbol as a marker that the ref hasn't been computed yet
+			ref[$value] !== $value &&
+			!ComputedRef.hasOutdatedDependenciesAfterCompute(ref)
+		)
+			return;
+
+		ComputedRef.unsubscribeFromDependencies(ref);
 
 		pushTrackingContext();
-		try {
-			ref[$value] = ref[$options].get();
-		} catch (e) {
-			if (e instanceof Error === false) e = new Error(String(e));
-
-			for (const sub of ref[$subscribers]) {
-				RefSubscription.notifyError(sub, e as Error);
-			}
-
-			throw e;
-		}
-		const dependencies = new Array<RefSubscription>();
-		for (const dep of popTrackingContext()!) {
-			dependencies.push(dep.subscribe(ref[$observer]));
-		}
-		ref[$dependencies] = dependencies;
+		ref[$value] = ComputedRef.tryGet(ref);
+		ref[$dependencies] = ComputedRef.initializeDependencies(
+			ref[$observer],
+			popTrackingContext()!
+		);
+		ref[$version]++;
 	}
 
-	private static onDependencyChange(ref: ComputedRef<any>, value: unknown) {
+	/**
+	 * Callback to use when an observable dependency changes.
+	 * @param ref - The computed ref to be notified
+	 * @returns
+	 */
+	private static onDependencyChange(ref: ComputedRef<any>) {
 		ref[$flags] |= Flags.Dirty;
 		// If the ref is already queued or has no active susbscribers, we don't need to queue it
 		if (ref[$flags] & Flags.Queued || ref[$subscribers].size === 0) return;
 
+		RefSubscription.notifyAllDirty(ref[$subscribers]);
+
 		ref[$flags] |= Flags.Queued;
 		queueMicrotask(ref[$compute]);
+	}
+
+	private static initObserver(ref: ComputedRef<any>): Partial<Observer> {
+		const callback = ComputedRef.onDependencyChange.bind(ComputedRef, ref);
+		return {
+			next: callback,
+			dirty: callback,
+		};
+	}
+
+	/**
+	 * Confirms if any dependencies are outdated ensuring that any dirty dependencies are
+	 * computed first.
+	 * @param ref
+	 * @returns true if any of the dependencies are outdated, false otherwise
+	 */
+	private static hasOutdatedDependenciesAfterCompute(
+		ref: ComputedRef
+	): boolean {
+		for (const dep of ref[$dependencies]) {
+			if (dep.isDirty && dep.source[$compute]) dep.source[$compute]();
+
+			if (dep.isOutdated) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Unsubscribes from all dependencies for the computed ref.
+	 * @remarks
+	 * This is used when the ref is computed to ensure that its list of dependencies
+	 * always reflects the last time it was computed.
+	 * @param ref
+	 */
+	private static unsubscribeFromDependencies(ref: ComputedRef<any>): void {
+		for (const dep of ref[$dependencies]) {
+			dep.subscription.unsubscribe();
+		}
+	}
+
+	/**
+	 * Attempts to get the value of a ref, catching any errors that may occur. If an error occurs,
+	 * it notifies all subscribers of the error.
+	 * @typeParam T
+	 * @param ref
+	 * @returns T
+	 */
+	private static tryGet<T>(ref: ComputedRef<T>): T {
+		try {
+			return ref[$options].get();
+		} catch (e) {
+			if (e instanceof Error === false) e = new Error(String(e));
+
+			RefSubscription.notifyAllError(ref[$subscribers], e as Error);
+
+			throw e;
+		}
+	}
+
+	/**
+	 * This function subscribes to a list of observables using the provided observer and uses the subscriptions
+	 * to populate an array of dependencies.
+	 * @param observer - The observer to use when subscribing to the dependencies
+	 * @param observables - The set of all observables to subscribe to and use as sources for the dependencies
+	 * @returns an array of dependencies
+	 */
+	private static initializeDependencies(
+		observer: Partial<Observer>,
+		observables: Set<Observable>
+	): Array<Dependency> {
+		const dependencies = new Array<Dependency>(observables.size);
+		let i = 0;
+		for (const dep of observables) {
+			dependencies[i++] = new Dependency(dep, dep.subscribe(observer));
+		}
+		return dependencies;
 	}
 }

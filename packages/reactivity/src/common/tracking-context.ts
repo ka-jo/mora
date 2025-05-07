@@ -1,24 +1,25 @@
-import { RefInstance } from "@/Ref/types";
+import { Observable } from "@/common/types";
 
-const CONTEXT_STACK = new Array<RefInstance[]>();
+const CONTEXT_STACK = new Array<Set<Observable>>();
+let _currentContext: Set<Observable> | undefined = undefined;
 
-export function pushTrackingContext(): RefInstance[] {
-	const context = new Array<RefInstance>();
+export function pushTrackingContext(): Set<Observable> {
+	const context = new Set<Observable>();
 	CONTEXT_STACK.push(context);
+	_currentContext = context;
 	return context;
 }
 
-export function popTrackingContext(): RefInstance[] | undefined {
-	return CONTEXT_STACK.pop();
+export function popTrackingContext(): Set<Observable> | undefined {
+	return (_currentContext = CONTEXT_STACK.pop());
 }
 
 export function isTrackingContext(): boolean {
-	return CONTEXT_STACK.length > 0;
+	return _currentContext !== undefined;
 }
 
-export function track(ref: RefInstance): void {
-	const stackLength = CONTEXT_STACK.length;
-	if (stackLength > 0) {
-		CONTEXT_STACK[stackLength - 1].push(ref);
+export function track(ref: Observable): void {
+	if (_currentContext) {
+		_currentContext.add(ref);
 	}
 }

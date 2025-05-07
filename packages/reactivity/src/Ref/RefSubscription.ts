@@ -1,7 +1,7 @@
 import { Flags } from "@/common/flags";
 import { $flags, $ref, $subscribers } from "@/common/symbols";
 import { Observer, Subscription } from "@/common/types";
-import { noop } from "@/common/util";
+import { NO_OP } from "@/common/util";
 import { RefInstance } from "@/Ref/types";
 
 const $observer = Symbol("observer");
@@ -48,9 +48,9 @@ export class RefSubscription implements Subscription {
 
 	private static readonly CLOSED_SUBSCRIPTION: RefSubscription = Object.freeze({
 		[$flags]: Flags.Aborted,
-		unsubscribe: noop,
-		enable: noop,
-		disable: noop,
+		unsubscribe: NO_OP,
+		enable: NO_OP,
+		disable: NO_OP,
 		closed: true,
 		enabled: false,
 	}) as RefSubscription;
@@ -70,9 +70,19 @@ export class RefSubscription implements Subscription {
 			subscription[$observer].next(value);
 	}
 
+	static notifyAllNext(subscriptions: Set<RefSubscription>, value: unknown) {
+		for (const subscription of subscriptions)
+			RefSubscription.notifyNext(subscription, value);
+	}
+
 	static notifyError(subscription: RefSubscription, error: Error) {
 		if (subscription[$flags] & Flags.Enabled)
 			subscription[$observer].error(error);
+	}
+
+	static notifyAllError(subscriptions: Set<RefSubscription>, error: Error) {
+		for (const subscription of subscriptions)
+			RefSubscription.notifyError(subscription, error);
 	}
 
 	static notifyComplete(subscription: RefSubscription) {
@@ -80,6 +90,15 @@ export class RefSubscription implements Subscription {
 			subscription[$observer].complete();
 
 		RefSubscription.cleanup(subscription);
+	}
+
+	static notifyAllComplete(subscriptions: Set<RefSubscription>) {
+		for (const subscription of subscriptions)
+			RefSubscription.notifyComplete(subscription);
+	}
+
+	static notifyAllDirty(subscriptions: Set<RefSubscription>) {
+		for (const subscription of subscriptions) subscription[$observer].dirty();
 	}
 
 	static cleanup(subscription: RefSubscription) {

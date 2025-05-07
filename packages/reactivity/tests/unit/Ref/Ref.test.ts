@@ -1,3 +1,4 @@
+import { ComputedRef } from "@/Ref/ComputedRef";
 import { Ref } from "@/Ref/Ref";
 
 describe("Ref", () => {
@@ -28,6 +29,30 @@ describe("Ref", () => {
 		it("should return false for non-Ref instance", () => {
 			const notRef = { get: () => {}, set: () => {} };
 			expect(Ref.isRef(notRef)).toBe(false);
+		});
+	});
+
+	describe("static computed method", () => {
+		it("should be callable with getter function", () => {
+			expect(() => {
+				const computedRef = Ref.computed(() => 42);
+				expect(computedRef).toBeRef();
+			}).not.toThrowError();
+		});
+
+		it("should be callable with options object", () => {
+			expect(() => {
+				const computedRef = Ref.computed({
+					get: () => 42,
+					set: (value) => {},
+				});
+				expect(computedRef).toBeRef();
+			}).not.toThrowError();
+		});
+
+		it("should return a ComputedRef instance", () => {
+			const computedRef = Ref.computed(() => 42);
+			expect(computedRef).toBeInstanceOf(ComputedRef);
 		});
 	});
 

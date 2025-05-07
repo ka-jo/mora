@@ -6,6 +6,7 @@ import {
 	$flags,
 	$ref,
 	$options,
+	$version,
 } from "@/common/symbols";
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
@@ -16,6 +17,7 @@ import { track } from "@/common/tracking-context";
 export class BaseRef<T = unknown> implements RefInstance<T, T> {
 	[$subscribers]: Set<RefSubscription> = new Set();
 	[$flags]: number = 0;
+	[$version]: number = 0;
 	[$value]: T;
 	[$ref]: BaseRef<T>;
 	[$options]?: RefOptions;
@@ -43,6 +45,8 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 		this[$value] = value;
 
 		if (this[$flags] & Flags.Aborted) return;
+
+		this[$version]++;
 
 		for (const sub of this[$subscribers]) {
 			RefSubscription.notifyNext(sub, value);
