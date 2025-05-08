@@ -9,6 +9,7 @@ import {
 	$observable,
 	$version,
 	$compute,
+	$observer,
 } from "@/common/symbols";
 import {
 	popTrackingContext,
@@ -25,7 +26,6 @@ import { RefSubscription } from "@/Ref/RefSubscription";
 import { createObserver } from "@/common/util";
 import { Dependency } from "@/common/Dependency";
 
-const $observer: unique symbol = Symbol("observer");
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
 
@@ -120,7 +120,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	private static compute(ref: ComputedRef<any>): void {
-		// A ref may have been queued to compute, but was computed before the queue was flushed.
+		// A ref may have been queued to compute but was computed before the queue was flushed.
 		// This would be the case if `get` was called on the ref or a dependency of the ref
 		if (!(ref[$flags] & Flags.Dirty)) return;
 
@@ -136,7 +136,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 		pushTrackingContext();
 		const computedValue = ComputedRef.tryGet(ref);
-		ref[$dependencies] = ComputedRef.initializeDependencies(
+		ref[$dependencies] = ComputedRef.initDependencies(
 			ref[$observer],
 			popTrackingContext()!
 		);
@@ -230,7 +230,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	 * @param observables - The set of all observables to subscribe to and use as sources for the dependencies
 	 * @returns an array of dependencies
 	 */
-	private static initializeDependencies(
+	private static initDependencies(
 		observer: Partial<Observer>,
 		observables: Set<Observable>
 	): Array<Dependency> {
