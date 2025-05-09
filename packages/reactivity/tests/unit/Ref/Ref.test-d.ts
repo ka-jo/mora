@@ -1,5 +1,5 @@
-import { Ref } from "@/Ref/Ref";
-import { ReadonlyRefInstance, RefInstance } from "@/Ref/types";
+import { Ref } from "@/Ref";
+import { ReadonlyRef, Ref } from "@/Ref/types";
 
 describe("Ref", () => {
 	it("should be a function", () => {
@@ -14,8 +14,8 @@ describe("Ref", () => {
 		expectTypeOf(Ref).toBeCallableWith(0, {});
 	});
 
-	it("should return a RefInstance", () => {
-		expectTypeOf(Ref).returns.toEqualTypeOf<RefInstance<unknown>>();
+	it("should return a Ref", () => {
+		expectTypeOf(Ref).returns.toEqualTypeOf<Ref<unknown>>();
 	});
 
 	describe("static isRef method", () => {
@@ -31,8 +31,8 @@ describe("Ref", () => {
 			expectTypeOf(Ref.isRef).returns.toEqualTypeOf<boolean>();
 		});
 
-		it("should guard RefInstance", () => {
-			expectTypeOf(Ref.isRef).guards.toEqualTypeOf<RefInstance<unknown>>();
+		it("should guard Ref", () => {
+			expectTypeOf(Ref.isRef).guards.toEqualTypeOf<Ref<unknown>>();
 		});
 	});
 
@@ -52,23 +52,19 @@ describe("Ref", () => {
 			});
 		});
 
-		it("should return a ReadonlyRefInstance if no setter is provided", () => {
-			expectTypeOf(Ref.computed(() => 0)).toEqualTypeOf<
-				ReadonlyRefInstance<number>
-			>();
+		it("should return a ReadonlyRef if no setter is provided", () => {
+			expectTypeOf(Ref.computed(() => 0)).toEqualTypeOf<ReadonlyRef<number>>();
 
-			expectTypeOf(Ref.computed({ get: () => 0 })).toEqualTypeOf<
-				ReadonlyRefInstance<number>
-			>();
+			expectTypeOf(Ref.computed({ get: () => 0 })).toEqualTypeOf<ReadonlyRef<number>>();
 		});
 
-		it("should return a RefInstance if a setter is provided", () => {
+		it("should return a Ref if a setter is provided", () => {
 			expectTypeOf(
 				Ref.computed({
 					get: () => 0,
 					set: (value) => {},
 				})
-			).toEqualTypeOf<RefInstance<number, number>>();
+			).toEqualTypeOf<Ref<number, number>>();
 		});
 	});
 });

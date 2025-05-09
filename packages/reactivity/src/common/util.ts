@@ -1,6 +1,6 @@
 import type { Observer } from "@/common/types";
 
-export const NO_OP = () => {};
+export const NO_OP = function noop() {};
 
 export function createObserver<T>(
 	onNextOrObserver: Observer<T>["next"] | Partial<Observer<T>>,

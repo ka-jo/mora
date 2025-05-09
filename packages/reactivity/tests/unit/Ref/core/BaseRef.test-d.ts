@@ -1,12 +1,12 @@
-import { BaseRef } from "@/Ref/BaseRef";
-import { RefInstance } from "@/Ref/types";
+import { BaseRef } from "@/Ref/core/BaseRef";
+import { Ref } from "@/Ref/types";
 import { Observable } from "@/common/types";
 
 describe("BaseRef", () => {
-	it("should extend RefInstance", () => {
-		// refer to tests/unit/Ref/types/RefInstance.test-d.ts for more details
-		expectTypeOf<BaseRef<number>>().toExtend<RefInstance<number>>();
-		expectTypeOf<BaseRef<number>>().toExtend<RefInstance<number, number>>();
+	it("should extend Ref", () => {
+		// refer to tests/unit/Ref/types/Ref.test-d.ts for more details
+		expectTypeOf<BaseRef<number>>().toExtend<Ref<number>>();
+		expectTypeOf<BaseRef<number>>().toExtend<Ref<number, number>>();
 	});
 
 	it("should extend Observable", () => {

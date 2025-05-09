@@ -1,8 +1,8 @@
 import { flushMicrotasks } from "../fixtures/util";
 import { Flags } from "@/common/flags";
 import { $flags } from "@/common/symbols";
-import { Ref } from "@/Ref/Ref";
-import { ReadonlyRefInstance, RefInstance } from "@/Ref/types";
+import { Ref } from "@/Ref";
+import { ReadonlyRef, Ref } from "@/Ref/types";
 
 test("computed with one dependency", () => {
 	const count = Ref(1);
@@ -90,10 +90,10 @@ describe("lazy evaluation", () => {
 	});
 
 	describe("when marked dirty", () => {
-		let count: RefInstance<number>;
-		let remainder: ReadonlyRefInstance<number>;
+		let count: Ref<number>;
+		let remainder: ReadonlyRef<number>;
 		let isEvenGetter: () => boolean;
-		let isEven: ReadonlyRefInstance<boolean>;
+		let isEven: ReadonlyRef<boolean>;
 
 		beforeEach(() => {
 			count = Ref(1);

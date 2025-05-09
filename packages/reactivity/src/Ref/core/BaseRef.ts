@@ -10,11 +10,11 @@ import {
 } from "@/common/symbols";
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
-import { RefInstance, RefOptions } from "@/Ref/types";
-import { RefSubscription } from "@/Ref/RefSubscription";
 import { track } from "@/common/tracking-context";
+import { Ref, RefOptions } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 
-export class BaseRef<T = unknown> implements RefInstance<T, T> {
+export class BaseRef<T = unknown> implements Ref<T, T> {
 	[$subscribers]: Set<RefSubscription> = new Set();
 	[$flags]: number = 0;
 	[$version]: number = 0;
@@ -61,7 +61,7 @@ export class BaseRef<T = unknown> implements RefInstance<T, T> {
 		return RefSubscription.init(this, observer);
 	}
 
-	[$observable](): RefInstance<T, T> {
+	[$observable](): Ref<T, T> {
 		return this;
 	}
 

@@ -1,5 +1,5 @@
-import { RefSubscription } from "@/Ref/RefSubscription";
-import { BaseRef } from "@/Ref/BaseRef";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
+import { BaseRef } from "@/Ref/core/BaseRef";
 import { Observer } from "@/common/types";
 import { $subscribers } from "@/common/symbols";
 

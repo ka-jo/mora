@@ -11,27 +11,17 @@ import {
 	$compute,
 	$observer,
 } from "@/common/symbols";
-import {
-	popTrackingContext,
-	pushTrackingContext,
-	track,
-} from "@/common/tracking-context";
+import { popTrackingContext, pushTrackingContext, track } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
-import {
-	RefInstance,
-	ComputedRefOptions,
-	WritableComputedRefOptions,
-} from "@/Ref/types";
-import { RefSubscription } from "@/Ref/RefSubscription";
+import { Ref, ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 import { createObserver } from "@/common/util";
 import { Dependency } from "@/common/Dependency";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
 
-export class ComputedRef<TGet = unknown, TSet = TGet>
-	implements RefInstance<TGet, TSet>
-{
+export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
 	[$subscribers]: Set<RefSubscription> = new Set();
 	[$dependencies]: Array<Dependency> = [];
 	[$flags]: number;
@@ -42,9 +32,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	[$observer]: Partial<Observer>;
 	[$compute]: () => void;
 
-	constructor(
-		options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>
-	) {
+	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
 		this[$flags] = Flags.Dirty;
 		this[$options] = options;
 		this[$ref] = this;
@@ -96,10 +84,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 				// Only calls to `get` should throw, so we swallow the error here.
 			}
 
-		return RefSubscription.init(
-			this,
-			createObserver(onNextOrObserver, onError, onComplete)
-		);
+		return RefSubscription.init(this, createObserver(onNextOrObserver, onError, onComplete));
 	}
 
 	[$observable]() {
@@ -126,20 +111,14 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 		ref[$flags] &= ~(Flags.Dirty | Flags.Queued);
 
-		if (
-			ref[$value] !== INITIAL_VALUE &&
-			!ComputedRef.hasOutdatedDependenciesAfterCompute(ref)
-		)
+		if (ref[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(ref))
 			return;
 
 		ComputedRef.unsubscribeFromDependencies(ref);
 
 		pushTrackingContext();
 		const computedValue = ComputedRef.tryGet(ref);
-		ref[$dependencies] = ComputedRef.initDependencies(
-			ref[$observer],
-			popTrackingContext()!
-		);
+		ref[$dependencies] = ComputedRef.initDependencies(ref[$observer], popTrackingContext()!);
 		if (computedValue !== ref[$value]) {
 			ref[$value] = computedValue;
 			ref[$version]++;
@@ -177,9 +156,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	 * @param ref
 	 * @returns true if any of the dependencies are outdated, false otherwise
 	 */
-	private static hasOutdatedDependenciesAfterCompute(
-		ref: ComputedRef
-	): boolean {
+	private static hasOutdatedDependenciesAfterCompute(ref: ComputedRef): boolean {
 		for (const dep of ref[$dependencies]) {
 			if (dep.isDirty && dep.source[$compute]) dep.source[$compute]();
 

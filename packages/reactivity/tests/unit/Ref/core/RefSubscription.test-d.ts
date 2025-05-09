@@ -1,5 +1,5 @@
 import { Subscription } from "@/common/types";
-import { RefSubscription } from "@/Ref/RefSubscription";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 describe("RefSubscription", () => {
 	it("should extend Subscription", () => {

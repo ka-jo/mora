@@ -1,114 +1,71 @@
-import { Dependency } from "@/common/Dependency";
-import { Flags } from "@/common/flags";
-import { $dependencies, $flags, $observable, $value } from "@/common/symbols";
-import { Observable } from "@/common/types";
-import { ComputedRef } from "@/Ref/ComputedRef";
-import { RefSubscription } from "@/Ref/RefSubscription";
+import { $observable, $value } from "@/common/symbols";
+import { BaseRef } from "@/Ref/core/BaseRef";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 
-describe("ComputedRef", () => {
+describe("BaseRef", () => {
 	describe("constructor", () => {
-		it("should return an instance of ComputedRef", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+		it("should return an instance of BaseRef", () => {
+			const ref = new BaseRef(0);
 
-			expect(ref).toBeInstanceOf(ComputedRef);
+			expect(ref).toBeInstanceOf(BaseRef);
+		});
+
+		it("should set the initial value", () => {
+			const ref = new BaseRef(0);
+
+			expect(ref[$value]).toBe(0);
 		});
 	});
 
 	describe("get method", () => {
-		it("should call the getter on initial get", () => {
-			const getFn = vi.fn(() => 0);
-			const ref = new ComputedRef({ get: getFn });
+		it("should return the current value", () => {
+			const ref = new BaseRef(0);
 
-			ref.get();
-
-			expect(getFn).toHaveBeenCalled();
-		});
-
-		it("should return the value from the get function", () => {
-			const ref = new ComputedRef({ get: () => 42 });
-
-			const result = ref.get();
-
-			expect(result).toBe(42);
-		});
-
-		it("should return the cached value if not dirty", () => {
-			const getter = vi.fn(() => 42);
-			const ref = new ComputedRef({ get: getter });
-
-			ref[$value] = 42; // Simulate cached value
-			ref[$flags] = 0; // Simulate not dirty
-
-			const result = ref.get();
-
-			expect(getter).not.toHaveBeenCalled(); // Ensure the getter is not called
-			expect(result).toBe(42);
-		});
-
-		describe("when the ref is dirty", () => {
-			it("should call the getter if any dependencies are outdated", () => {
-				const getter = vi.fn(() => 42);
-				const ref = new ComputedRef({ get: getter });
-
-				ref[$value] = 27;
-				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = [
-					{
-						isOutdated: true,
-						subscription: { unsubscribe: () => {} },
-					} as Dependency,
-				];
-
-				const result = ref.get();
-				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
-				expect(getter).toHaveBeenCalled();
-				expect(result).toBe(42);
-			});
-
-			it("should not call the getter if no dependencies are outdated", () => {
-				const getter = vi.fn(() => 42);
-				const ref = new ComputedRef({ get: getter });
-
-				ref[$value] = 27;
-				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = [{ isOutdated: false } as Dependency];
-
-				const result = ref.get();
-				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
-				expect(getter).not.toHaveBeenCalled();
-				expect(result).toBe(27);
-			});
+			expect(ref.get()).toBe(ref[$value]);
 		});
 	});
 
 	describe("set method", () => {
-		it("should throw an error if setter not defined", () => {
-			const ref = new ComputedRef({ get: () => 0 });
-
-			expect(() => ref.set(1)).toThrow(TypeError);
-		});
-
 		it("should return undefined", () => {
-			const ref = new ComputedRef({ get: () => 0, set: () => {} });
+			const ref = new BaseRef(0);
 
 			const result = ref.set(1);
 
 			expect(result).toBeUndefined();
 		});
 
-		it("should call setter", () => {
-			const setFn = vi.fn();
-			const ref = new ComputedRef({ get: () => 0, set: setFn });
+		it("should set the value", () => {
+			const ref = new BaseRef(0);
 
 			ref.set(1);
 
-			expect(setFn).toHaveBeenCalledWith(1);
+			expect(ref[$value]).toBe(1);
+		});
+
+		it("should notify observers when value is different", () => {
+			const ref = new BaseRef(0);
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			ref.set(1);
+
+			expect(nextCallback).toHaveBeenCalledWith(1);
+		});
+
+		it("should not notify observers when value is the same", () => {
+			const ref = new BaseRef(0);
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			ref.set(0);
+
+			expect(nextCallback).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("subscribe method", () => {
 		it("should be callable with an observer", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const errorCallback = vi.fn();
 			const completeCallback = vi.fn();
@@ -123,7 +80,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should be callable with a next function", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 
 			expect(() => {
@@ -132,7 +89,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should be callable with a next function and an error function", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const errorCallback = vi.fn();
 
@@ -142,7 +99,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should be callable with a next function, an error function, and a complete function", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const errorCallback = vi.fn();
 			const completeCallback = vi.fn();
@@ -153,7 +110,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should be callable with a next function and a complete function, but no error function", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const completeCallback = vi.fn();
 			expect(() => {
@@ -162,7 +119,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should return a RefSubscription instance", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 
 			const subscription = ref.subscribe(nextCallback);
@@ -171,7 +128,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should immediately trigger complete if the ref is aborted", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const completeCallback = vi.fn();
 
 			ref.abort();
@@ -184,7 +141,7 @@ describe("ComputedRef", () => {
 
 	describe("[$observable] method", () => {
 		it("should return the instance itself", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 
 			expect(ref[$observable]()).toBe(ref);
 		});
@@ -192,7 +149,7 @@ describe("ComputedRef", () => {
 
 	describe("abort method", () => {
 		it("should return void", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 
 			const result = ref.abort();
 
@@ -200,7 +157,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should trigger complete callback for observers", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const completeCallback = vi.fn();
 			ref.subscribe({ complete: completeCallback });
 
@@ -210,7 +167,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should prevent further notifications to observers", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			ref.subscribe(nextCallback);
 
@@ -222,7 +179,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should set closed to true for all subscriptions", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
@@ -232,7 +189,7 @@ describe("ComputedRef", () => {
 		});
 
 		it("should set enabled to false for all subscriptions", () => {
-			const ref = new ComputedRef({ get: () => 0 });
+			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
@@ -245,7 +202,7 @@ describe("ComputedRef", () => {
 	describe("supports AbortSignal", () => {
 		it("should trigger complete callback for observers when aborted", () => {
 			const controller = new AbortController();
-			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const ref = new BaseRef(0, { signal: controller.signal });
 			const completeCallback = vi.fn();
 			ref.subscribe({ complete: completeCallback });
 
@@ -256,7 +213,7 @@ describe("ComputedRef", () => {
 
 		it("should prevent further notifications to observers", () => {
 			const controller = new AbortController();
-			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const ref = new BaseRef(0, { signal: controller.signal });
 			const nextCallback = vi.fn();
 			ref.subscribe(nextCallback);
 
@@ -269,7 +226,7 @@ describe("ComputedRef", () => {
 
 		it("should set closed to true for all subscriptions", () => {
 			const controller = new AbortController();
-			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const ref = new BaseRef(0, { signal: controller.signal });
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
@@ -280,7 +237,7 @@ describe("ComputedRef", () => {
 
 		it("should set enabled to false for all subscriptions", () => {
 			const controller = new AbortController();
-			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
+			const ref = new BaseRef(0, { signal: controller.signal });
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
@@ -288,16 +245,5 @@ describe("ComputedRef", () => {
 
 			expect(subscription.enabled).toBe(false);
 		});
-	});
-
-	it("should not call getter until first access", () => {
-		const getter = vi.fn(() => 42);
-		const ref = new ComputedRef({ get: getter });
-
-		expect(getter).not.toHaveBeenCalled();
-
-		ref.get();
-
-		expect(getter).toHaveBeenCalled();
 	});
 });

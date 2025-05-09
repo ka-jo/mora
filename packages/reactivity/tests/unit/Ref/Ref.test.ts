@@ -1,5 +1,5 @@
-import { ComputedRef } from "@/Ref/ComputedRef";
-import { Ref } from "@/Ref/Ref";
+import { ComputedRef } from "@/Ref/core/ComputedRef";
+import { Ref } from "@/Ref";
 
 describe("Ref", () => {
 	describe("constructor", () => {

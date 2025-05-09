@@ -1,65 +1,55 @@
 import { $observable } from "@/common/symbols";
 import { Observable } from "@/common/types";
-import { RefInstance } from "@/Ref/types";
-import { RefSubscription } from "@/Ref/RefSubscription";
+import { Ref } from "@/Ref/types";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 
-describe("RefInstance", () => {
+describe("Ref", () => {
 	it("should extend Observable", () => {
-		expectTypeOf<RefInstance<number>>().toExtend<Observable<number>>();
+		expectTypeOf<Ref<number>>().toExtend<Observable<number>>();
 	});
 
 	describe("TSet type parameter", () => {
 		it("should default to TGet", () => {
-			const ref: RefInstance<number, number> = {} as any;
-			expectTypeOf(ref).toEqualTypeOf<RefInstance<number, number>>();
+			const ref: Ref<number, number> = {} as any;
+			expectTypeOf(ref).toEqualTypeOf<Ref<number, number>>();
 		});
 	});
 
 	describe("get method", () => {
 		it("should be a function", () => {
-			expectTypeOf<RefInstance<number>>().toHaveProperty("get").toBeFunction();
+			expectTypeOf<Ref<number>>().toHaveProperty("get").toBeFunction();
 		});
 
 		it("should return the correct type", () => {
-			expectTypeOf<RefInstance<number>>()
-				.toHaveProperty("get")
-				.returns.toEqualTypeOf<number>();
+			expectTypeOf<Ref<number>>().toHaveProperty("get").returns.toEqualTypeOf<number>();
 		});
 
 		it("should accept no arguments", () => {
-			expectTypeOf<RefInstance<any>>()
-				.toHaveProperty("get")
-				.parameters.toEqualTypeOf<[]>();
+			expectTypeOf<Ref<any>>().toHaveProperty("get").parameters.toEqualTypeOf<[]>();
 		});
 	});
 
 	describe("set method", () => {
 		it("should be a function", () => {
-			expectTypeOf<RefInstance<number>>().toHaveProperty("set").toBeFunction();
+			expectTypeOf<Ref<number>>().toHaveProperty("set").toBeFunction();
 		});
 
 		it("should return void", () => {
-			expectTypeOf<RefInstance<number>>()
-				.toHaveProperty("set")
-				.returns.toEqualTypeOf<void>();
+			expectTypeOf<Ref<number>>().toHaveProperty("set").returns.toEqualTypeOf<void>();
 		});
 
 		it("should accept one argument", () => {
-			expectTypeOf<RefInstance<number>>()
-				.toHaveProperty("set")
-				.parameters.toEqualTypeOf<[number]>();
+			expectTypeOf<Ref<number>>().toHaveProperty("set").parameters.toEqualTypeOf<[number]>();
 		});
 	});
 
 	describe("subscribe method", () => {
 		it("should be a function", () => {
-			expectTypeOf<RefInstance<number>>()
-				.toHaveProperty("subscribe")
-				.toBeFunction();
+			expectTypeOf<Ref<number>>().toHaveProperty("subscribe").toBeFunction();
 		});
 
 		it("should return RefSubscription", () => {
-			expectTypeOf<RefInstance<number>>()
+			expectTypeOf<Ref<number>>()
 				.toHaveProperty("subscribe")
 				.returns.toEqualTypeOf<RefSubscription>();
 		});
@@ -112,9 +102,7 @@ describe("RefInstance", () => {
 
 	describe("[$Observable] method", () => {
 		it("should be a function", () => {
-			expectTypeOf<Observable<number>>()
-				.toHaveProperty($observable)
-				.toBeFunction();
+			expectTypeOf<Observable<number>>().toHaveProperty($observable).toBeFunction();
 		});
 
 		it("should return Observable", () => {

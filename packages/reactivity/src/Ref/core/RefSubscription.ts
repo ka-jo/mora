@@ -2,7 +2,7 @@ import { Flags } from "@/common/flags";
 import { $flags, $ref, $subscribers } from "@/common/symbols";
 import { Observer, Subscription } from "@/common/types";
 import { NO_OP } from "@/common/util";
-import { RefInstance } from "@/Ref/types";
+import { Ref } from "@/Ref/types";
 
 const $observer = Symbol("observer");
 
@@ -15,10 +15,10 @@ const $observer = Symbol("observer");
  */
 export class RefSubscription implements Subscription {
 	[$flags]: number = Flags.Enabled;
-	[$ref]: RefInstance;
+	[$ref]: Ref;
 	[$observer]: Observer;
 
-	constructor(ref: RefInstance, observer: Observer<unknown>) {
+	constructor(ref: Ref, observer: Observer<unknown>) {
 		this[$ref] = ref;
 		this[$observer] = observer;
 	}
@@ -55,7 +55,7 @@ export class RefSubscription implements Subscription {
 		enabled: false,
 	}) as RefSubscription;
 
-	static init(ref: RefInstance, observer: Observer): RefSubscription {
+	static init(ref: Ref, observer: Observer): RefSubscription {
 		if (ref[$flags] & Flags.Aborted) {
 			observer.complete();
 			return RefSubscription.CLOSED_SUBSCRIPTION;
@@ -66,35 +66,29 @@ export class RefSubscription implements Subscription {
 	}
 
 	static notifyNext(subscription: RefSubscription, value: unknown) {
-		if (subscription[$flags] & Flags.Enabled)
-			subscription[$observer].next(value);
+		if (subscription[$flags] & Flags.Enabled) subscription[$observer].next(value);
 	}
 
 	static notifyAllNext(subscriptions: Set<RefSubscription>, value: unknown) {
-		for (const subscription of subscriptions)
-			RefSubscription.notifyNext(subscription, value);
+		for (const subscription of subscriptions) RefSubscription.notifyNext(subscription, value);
 	}
 
 	static notifyError(subscription: RefSubscription, error: Error) {
-		if (subscription[$flags] & Flags.Enabled)
-			subscription[$observer].error(error);
+		if (subscription[$flags] & Flags.Enabled) subscription[$observer].error(error);
 	}
 
 	static notifyAllError(subscriptions: Set<RefSubscription>, error: Error) {
-		for (const subscription of subscriptions)
-			RefSubscription.notifyError(subscription, error);
+		for (const subscription of subscriptions) RefSubscription.notifyError(subscription, error);
 	}
 
 	static notifyComplete(subscription: RefSubscription) {
-		if (subscription[$flags] & Flags.Enabled)
-			subscription[$observer].complete();
+		if (subscription[$flags] & Flags.Enabled) subscription[$observer].complete();
 
 		RefSubscription.cleanup(subscription);
 	}
 
 	static notifyAllComplete(subscriptions: Set<RefSubscription>) {
-		for (const subscription of subscriptions)
-			RefSubscription.notifyComplete(subscription);
+		for (const subscription of subscriptions) RefSubscription.notifyComplete(subscription);
 	}
 
 	static notifyAllDirty(subscriptions: Set<RefSubscription>) {
