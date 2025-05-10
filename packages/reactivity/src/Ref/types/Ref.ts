@@ -76,6 +76,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * subscribers of the change.
 	 *
 	 * @param value The new value to set
+	 *
 	 * @public
 	 */
 	set(value: TSet): void;
@@ -86,6 +87,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 *
 	 * @param observer an {@link Observer} object with callbacks for `next`, `error`, and/or `complete`.
 	 * @returns a {@link RefSubscription} object that can be used to manage the subscription.
+	 *
 	 * @public
 	 */
 	subscribe(observer: Partial<Observer<TGet>>): RefSubscription;
@@ -97,6 +99,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * @param onNext the function to be called when the ref value changes.
 	 * @param onError (optional) the function to be called when an error occurs.
 	 * @param onComplete (optional) the function to be called when the ref is completed.
+	 *
 	 * @public
 	 */
 	subscribe(

@@ -1,6 +1,8 @@
 import { $ref } from "@/common/symbols";
-import { Ref } from "@/Ref/types";
+import { Ref, RefConstructor } from "@/Ref/types";
 
-export function isRef<T>(value: Ref<T> | any): value is Ref<T> {
+export const isRef: RefConstructor["isRef"] = function isRef<T>(
+	value: Ref<T> | any
+): value is Ref<T> {
 	return value[$ref] === value;
-}
+};

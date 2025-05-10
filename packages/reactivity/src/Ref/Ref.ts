@@ -1,10 +1,10 @@
-import type { RefOptions, Ref as RefType, RefConstructor } from "@/Ref/types";
+import { RefOptions, RefConstructor } from "@/Ref/types";
 import { BaseRef } from "@/Ref/core/BaseRef";
 import { isRef } from "@/Ref/isRef";
 import { computed } from "@/Ref/computed";
 
-const RefFactory = Object.defineProperties(
-	function Ref<T>(value: T, options?: RefOptions): RefType<T, T> {
+export const Ref: RefConstructor = Object.defineProperties(
+	function Ref<T>(value?: T, options?: RefOptions) {
 		return new BaseRef(value, options);
 	},
 	{
@@ -21,7 +21,4 @@ const RefFactory = Object.defineProperties(
 			writable: false,
 		},
 	}
-) as RefConstructor;
-
-export const Ref = RefFactory;
-export type Ref<TGet, TSet = TGet> = RefType<TGet, TSet>;
+) as any;

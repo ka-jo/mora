@@ -7,6 +7,8 @@ import type { RefSubscription } from "@/Ref/core/RefSubscription";
 /**
  * An instance of {@link Ref} with no means of setting the value. {@link RefConstructor.readonly | Ref.readonly}
  * returns a ReadonlyRef as does {@link RefConstructor.computed | Ref.computed} if no setter is provided.
+ *
+ * @public
  */
 export interface ReadonlyRef<TGet> extends Observable<TGet> {
 	/**
@@ -51,6 +53,7 @@ export interface ReadonlyRef<TGet> extends Observable<TGet> {
 	 *
 	 * @param observer an {@link Observer} object with callbacks for `next`, `error`, and/or `complete`.
 	 * @returns a {@link RefSubscription} object that can be used to manage the subscription.
+	 *
 	 * @public
 	 */
 	subscribe(observer: Partial<Observer<TGet>>): RefSubscription;
@@ -61,6 +64,7 @@ export interface ReadonlyRef<TGet> extends Observable<TGet> {
 	 * @param onNext the function to be called when the ref value changes.
 	 * @param onError (optional) the function to be called when an error occurs.
 	 * @param onComplete (optional) the function to be called when the ref is completed.
+	 *
 	 * @public
 	 */
 	subscribe(
