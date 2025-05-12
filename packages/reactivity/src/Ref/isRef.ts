@@ -1,5 +1,6 @@
 import { $ref } from "@/common/symbols";
-import { Ref, RefConstructor } from "@/Ref/types";
+import type { RefConstructor } from "@/Ref/types";
+import type { Ref } from "@/Ref/Ref";
 
 export const isRef: RefConstructor["isRef"] = function isRef<T>(
 	value: Ref<T> | any

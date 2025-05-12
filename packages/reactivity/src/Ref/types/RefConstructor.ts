@@ -1,7 +1,13 @@
-import { ComputedRefOptions, Ref, WritableComputedRefOptions, ReadonlyRef } from "@/Ref/types";
+import type {
+	ComputedRefOptions,
+	WritableComputedRefOptions,
+	ReadonlyRef,
+	RefOptions,
+} from "@/Ref/types";
+import type { Ref } from "@/Ref/Ref";
 
 /**
- * The constructor for creating a {@link Ref} instance. If no value is provided,
+ * The constructor for creating a {@link (Ref:interface)} instance. If no value is provided,
  * the ref will be initialized with `undefined` and the type will be `undefined | T`.
  *
  * @remarks
@@ -11,16 +17,16 @@ import { ComputedRefOptions, Ref, WritableComputedRefOptions, ReadonlyRef } from
  * @public
  */
 export interface RefConstructor {
-	<T>(): Ref<undefined | T>;
-	<T>(value: T): Ref<T>;
-	new <T>(): Ref<undefined | T>;
-	new <T>(value: T): Ref<T>;
+	<T>(_?: undefined, options?: RefOptions): Ref<undefined | T>;
+	<T>(value: T, options?: RefOptions): Ref<T>;
+	new <T>(_?: undefined, options?: RefOptions): Ref<undefined | T>;
+	new <T>(value: T, options?: RefOptions): Ref<T>;
 
 	/**
-	 * Type guard that checks if a value is a {@link Ref}
+	 * Type guard that checks if a value is a {@link (Ref:interface)}
 	 *
-	 * @param value
-	 * @returns `true` if the value is a {@link Ref}, `false` otherwise
+	 * @param value - the value to check
+	 * @returns `true` if the value is a {@link (Ref:interface)}, `false` otherwise
 	 *
 	 * @public
 	 */
@@ -29,16 +35,16 @@ export interface RefConstructor {
 	/**
 	 * Creates a computed ref using the provided options
 	 *
-	 * @param options a {@link WritableComputedRefOptions} object
-	 * @returns a {@link Ref} instance
+	 * @param options - a {@link WritableComputedRefOptions} object
+	 * @returns a {@link (Ref:interface)} instance
 	 *
 	 * @public
 	 */
-	computed<TGet, TSet>(options: WritableComputedRefOptions<TGet, TSet>): Ref<TGet, TSet>;
+	computed<TGet, TSet = TGet>(options: WritableComputedRefOptions<TGet, TSet>): Ref<TGet, TSet>;
 	/**
 	 * Creates a readonly computed ref using the provided getter
 	 *
-	 * @param getter a function that returns the value of the computed ref
+	 * @param getter - a function that returns the value of the computed ref
 	 * @returns a {@link ReadonlyRef} instance
 	 *
 	 * @public
@@ -47,7 +53,7 @@ export interface RefConstructor {
 	/**
 	 * Creates a readonly computed ref using the provided options
 	 *
-	 * @param options a {@link ComputedRefOptions} object
+	 * @param options - a {@link ComputedRefOptions} object
 	 * @returns a {@link ReadonlyRef} instance
 	 *
 	 * @public

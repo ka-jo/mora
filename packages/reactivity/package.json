@@ -11,7 +11,8 @@
         "directory": "packages/reactivity"
     },
     "scripts": {
-        "test": "vitest --typecheck"
+        "test": "vitest --typecheck",
+        "build": "vite build"
     },
     "dependencies": {
         "symbol-observable": "^4.0.0"

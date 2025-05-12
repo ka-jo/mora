@@ -11,9 +11,12 @@ import {
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { track } from "@/common/tracking-context";
-import { Ref, RefOptions } from "@/Ref/types";
+import type { RefOptions } from "@/Ref/types";
+import type { Ref } from "@/Ref/Ref";
 import { RefSubscription } from "@/Ref/core/RefSubscription";
 
+/**
+ * @internal */
 export class BaseRef<T = unknown> implements Ref<T, T> {
 	[$subscribers]: Set<RefSubscription> = new Set();
 	[$flags]: number = 0;

@@ -2,6 +2,7 @@ import { $compute, $flags, $observable, $version } from "@/common/symbols";
 import { Observer, Subscription } from "@/common/types";
 
 /**
+ * @privateRemarks
  * Mora uses the Observable as the core primitive for its reactive philosophy internally.
  * Externally, this will be represented as a Ref, but internally, the Observable is the
  * primitive that is common to all features/namespaces.
@@ -23,7 +24,7 @@ import { Observer, Subscription } from "@/common/types";
  * This Observable type is meant to model how Observables are used internally in Mora,
  * not necessarily how Observables are used by the ecosystem as a whole.
  *
- * @private
+ * @public
  */
 export interface Observable<T = unknown> {
 	subscribe(observer: Partial<Observer<T>>): Subscription;
@@ -32,8 +33,17 @@ export interface Observable<T = unknown> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription;
-	[$observable](): Observable<T>;
+	[Symbol.observable](): Observable<T>;
+	/**
+	 * @internal
+	 */
 	[$version]: number;
+	/**
+	 * @internal
+	 */
 	[$flags]: number;
+	/**
+	 * @internal
+	 */
 	[$compute]?: () => void;
 }

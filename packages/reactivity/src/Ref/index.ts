@@ -1,27 +1,3 @@
-import type { RefOptions, Ref as RefType, RefConstructor } from "@/Ref/types";
-import { BaseRef } from "@/Ref/core/BaseRef";
-import { isRef } from "@/Ref/isRef";
-import { computed } from "@/Ref/computed";
-
-const RefFactory = Object.defineProperties(
-	function Ref<T>(value: T, options?: RefOptions): RefType<T, T> {
-		return new BaseRef(value, options);
-	},
-	{
-		[Symbol.hasInstance]: {
-			value: (instance: unknown): boolean => isRef(instance),
-			writable: false,
-		},
-		isRef: {
-			value: isRef,
-			writable: false,
-		},
-		computed: {
-			value: computed,
-			writable: false,
-		},
-	}
-) as RefConstructor;
-
-export const Ref = RefFactory;
-export type Ref<TGet, TSet = TGet> = RefType<TGet, TSet>;
+export * from "@/Ref/Ref";
+export * from "@/Ref/types";
+export type { RefSubscription } from "@/Ref/core/RefSubscription";

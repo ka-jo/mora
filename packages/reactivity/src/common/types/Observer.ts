@@ -3,23 +3,25 @@ import { Observable } from "@/common/types/Observable";
 /**
  * The Observer interface defines the structure of an object used to subscribe to an
  * {@link Observable}.
+ *
+ * @public
  */
 export interface Observer<T = unknown> {
 	/**
 	 * Callback to use when the observable emits a new value.
 	 *
-	 * @param value
+	 * @param value - The value emitted by the observable.
 	 */
 	next(value: T): void;
 	/**
      * Callback to use when the observable encounters an error.
      * 
-     * @param err The error that occurred.
+     * @param err - The error that occurred.
      * 
      * @remarks
      * Unlike other observable implementations, this callback can be called multiple times.
      * The error parameter is ensured to be an instance of Error; it coerces any non-error value
-     * into a string and then passes the stringified value to the {@link Error} constructor.
+     * into a string and then passes the stringified value to the Error constructor.
 
      * @privateRemarks
      * Currently, only computed refs will trigger this callback
@@ -42,7 +44,6 @@ export interface Observer<T = unknown> {
 	 * means of notifying subscribers of a dirty observable, we've extended the observer to
 	 * include this hook.
 	 *
-	 * @private
-	 */
+	 * @internal	 */
 	dirty(): void;
 }

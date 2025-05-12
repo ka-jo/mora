@@ -1,5 +1,5 @@
 import { Ref } from "@/Ref";
-import { ReadonlyRef, Ref } from "@/Ref/types";
+import { ReadonlyRef } from "@/Ref/types";
 
 describe("Ref", () => {
 	it("should be a function", () => {

@@ -12,15 +12,18 @@ import {
 	$observer,
 } from "@/common/symbols";
 import { popTrackingContext, pushTrackingContext, track } from "@/common/tracking-context";
-import { Observable, Observer } from "@/common/types";
-import { Ref, ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
-import { RefSubscription } from "@/Ref/core/RefSubscription";
-import { createObserver } from "@/common/util";
+import type { Observable, Observer } from "@/common/types";
 import { Dependency } from "@/common/Dependency";
+import { createObserver } from "@/common/util";
+import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
+import type { Ref } from "@/Ref/Ref";
+import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
 
+/**
+ * @internal */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
 	[$subscribers]: Set<RefSubscription> = new Set();
 	[$dependencies]: Array<Dependency> = [];

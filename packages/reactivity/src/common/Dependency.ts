@@ -2,10 +2,17 @@ import { $flags, $version } from "@/common/symbols";
 import { Flags } from "@/common/flags";
 import { Observable, Subscription } from "@/common/types";
 
+/**
+ * The dependency class is used to track a dependency for computed refs so that they can determine
+ * when to re-evaluate after being marked dirty. Specifically, it trackes the version of the source
+ * against the version of the dependency when it was created.
+ *
+ * @internal
+ */
 export class Dependency {
 	public readonly source: Observable;
 	public readonly subscription: Subscription;
-	public readonly version: number;
+	private readonly version: number;
 
 	public constructor(source: Observable, subscription: Subscription) {
 		this.source = source;

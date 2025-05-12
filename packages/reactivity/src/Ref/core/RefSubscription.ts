@@ -1,17 +1,18 @@
 import { Flags } from "@/common/flags";
-import { $flags, $ref, $subscribers } from "@/common/symbols";
+import { $flags, $ref, $subscribers, $observer } from "@/common/symbols";
 import { Observer, Subscription } from "@/common/types";
 import { NO_OP } from "@/common/util";
-import { Ref } from "@/Ref/types";
-
-const $observer = Symbol("observer");
+import type { Ref } from "@/Ref/Ref";
 
 /**
  * A subscription implementation intedended to be used to manage subscriptions to Refs.
  * It allows enabling/disabling a subscription without closing it entirely.
- * @remarks
+ *
+ * @privateRemarks
  * To manage the subscription's lifecycle, this class mutates a Ref's observers Set
  * directly.
+ *
+ * @public
  */
 export class RefSubscription implements Subscription {
 	[$flags]: number = Flags.Enabled;
