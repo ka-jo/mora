@@ -1,5 +1,6 @@
-import { $compute, $flags, $observable, $version } from "@/common/symbols";
-import { Observer, Subscription } from "@/common/types";
+import type { Observer } from "@/common/types";
+import type { Subscription } from "@/common/Subscription";
+import { $compute, $flags, $observable, $subscribers, $version } from "@/common/symbols";
 
 /**
  * @privateRemarks
@@ -34,6 +35,10 @@ export interface Observable<T = unknown> {
 		onComplete?: Observer<T>["complete"]
 	): Subscription;
 	[Symbol.observable](): Observable<T>;
+	/**
+	 * @internal
+	 */
+	[$subscribers]: Set<Subscription>;
 	/**
 	 * @internal
 	 */

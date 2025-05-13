@@ -30,7 +30,7 @@ export interface RefConstructor {
 	 *
 	 * @public
 	 */
-	isRef<T>(value: Ref<T> | T): value is Ref<T>;
+	isRef<T>(value: Ref<T> | unknown): value is Ref<T>;
 
 	/**
 	 * Creates a computed ref using the provided options

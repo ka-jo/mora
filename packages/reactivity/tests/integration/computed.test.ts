@@ -1,8 +1,7 @@
 import { flushMicrotasks } from "../fixtures/util";
 import { Flags } from "@/common/flags";
 import { $flags } from "@/common/symbols";
-import { Ref } from "@/Ref";
-import { ReadonlyRef, Ref } from "@/Ref/types";
+import { Ref, ReadonlyRef } from "@/Ref";
 
 test("computed with one dependency", () => {
 	const count = Ref(1);

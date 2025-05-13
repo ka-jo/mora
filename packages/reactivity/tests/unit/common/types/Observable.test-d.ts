@@ -1,12 +1,11 @@
 import { $observable } from "@/common/symbols";
-import { Observable, Subscription } from "@/common/types";
+import { Subscription } from "@/common/Subscription";
+import { Observable } from "@/common/types";
 
 describe("Observable", () => {
 	describe("subscribe method", () => {
 		it("should be a function", () => {
-			expectTypeOf<Observable<number>>()
-				.toHaveProperty("subscribe")
-				.toBeFunction();
+			expectTypeOf<Observable<number>>().toHaveProperty("subscribe").toBeFunction();
 		});
 
 		it("should return Subscription", () => {
@@ -63,9 +62,7 @@ describe("Observable", () => {
 
 	describe("[$Observable] method", () => {
 		it("should be a function", () => {
-			expectTypeOf<Observable<number>>()
-				.toHaveProperty($observable)
-				.toBeFunction();
+			expectTypeOf<Observable<number>>().toHaveProperty($observable).toBeFunction();
 		});
 
 		it("should return Observable", () => {

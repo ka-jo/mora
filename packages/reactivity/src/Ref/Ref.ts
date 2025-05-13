@@ -2,11 +2,10 @@ import { RefOptions, RefConstructor } from "@/Ref/types";
 import { BaseRef } from "@/Ref/core/BaseRef";
 import { isRef } from "@/Ref/isRef";
 import { computed } from "@/Ref/computed";
-
+import type { Subscription } from "@/common/Subscription";
 import type { Observable, Observer } from "@/common/types";
 import type { $ref, $flags, $version, $subscribers } from "@/common/symbols";
 import type { Flags } from "@/common/flags";
-import type { RefSubscription } from "@/Ref/core/RefSubscription";
 
 /**
  * The `Ref` interface is the core reactive object in Mora. A ref instance holds a value
@@ -39,7 +38,8 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * The state of any flags that are set on the ref. Refer to {@link Flags} for possible
 	 * states tracked with this field.
 	 *
-	 * @internal	 */
+	 * @internal
+	 */
 	[$flags]: number;
 
 	/**
@@ -47,15 +47,17 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * using `===` to determine if the value requires a new version. This is used by
 	 * computed refs to determine if dependencies changed after being marked dirty.
 	 *
-	 * @internal	 */
+	 * @internal
+	 */
 	[$version]: number;
 
 	/**
 	 * The set of all current subscribers to the ref. This property is mutated
-	 * directly by {@link RefSubscription} to manage the subscription lifecycle.
+	 * directly by {@link Subscription} to manage the subscription lifecycle.
 	 *
-	 * @internal	 */
-	[$subscribers]: Set<RefSubscription>;
+	 * @internal
+	 */
+	[$subscribers]: Set<Subscription>;
 
 	/**
 	 * The ref symbol is used internally to identify ref instances. It is not intended
@@ -64,6 +66,20 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * @internal
 	 */
 	[$ref]: Ref<TGet, TSet>;
+
+	/**
+	 * This method technically exists on the instance of the ref itself because it makes
+	 * it easier for different Ref implementations to implement their own abort method,
+	 * but I don't think we want aborting to be at the top of a consumer's mind when
+	 * interacting with a ref, so we marking it as internal to prevent exposing it in the
+	 * public API. Instead, a consumer should use the abort method on the Ref namespace.
+	 *
+	 * In the future, we may want to make this a symbol property to make it less visible
+	 * at runtime, but for the time being, we are leaving it as a regular method.
+	 *
+	 * @internal
+	 */
+	abort(): void;
 
 	/**
 	 * Returns the current value of the ref. Calling this method will register the
@@ -88,11 +104,11 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * the value, errors, and/or when the ref is completed.
 	 *
 	 * @param observer - an {@link Observer} object with callbacks for `next`, `error`, and/or `complete`.
-	 * @returns a {@link RefSubscription} object that can be used to manage the subscription.
+	 * @returns a {@link Subscription} object that can be used to manage the subscription.
 	 *
 	 * @public
 	 */
-	subscribe(observer: Partial<Observer<TGet>>): RefSubscription;
+	subscribe(observer: Partial<Observer<TGet>>): Subscription;
 
 	/**
 	 * Subscribes to the ref, allowing the subscriber to be notified of changes to
@@ -108,7 +124,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 		onNext: Observer<TGet>["next"],
 		onError?: Observer<TGet>["error"],
 		onComplete?: Observer<TGet>["complete"]
-	): RefSubscription;
+	): Subscription;
 
 	/**
 	 * A function that returns the ref instance itself. This is required when

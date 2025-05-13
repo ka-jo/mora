@@ -1,6 +1,7 @@
+import type { Observable } from "@/common/types";
+import type { Subscription } from "@/common/Subscription";
 import { $flags, $version } from "@/common/symbols";
 import { Flags } from "@/common/flags";
-import { Observable, Subscription } from "@/common/types";
 
 /**
  * The dependency class is used to track a dependency for computed refs so that they can determine

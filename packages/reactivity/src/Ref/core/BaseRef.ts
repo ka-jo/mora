@@ -11,14 +11,15 @@ import {
 import { createObserver } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { track } from "@/common/tracking-context";
+import { Subscription } from "@/common/Subscription";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
-import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 /**
- * @internal */
+ * @internal
+ */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	[$subscribers]: Set<RefSubscription> = new Set();
+	[$subscribers]: Set<Subscription> = new Set();
 	[$flags]: number = 0;
 	[$version]: number = 0;
 	[$value]: T;
@@ -37,7 +38,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 	get(): T {
 		if (!(this[$flags] & Flags.Aborted)) {
-			track(this);
+			track(this, $value);
 		}
 		return this[$value];
 	}
@@ -51,17 +52,17 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		this[$version]++;
 
-		RefSubscription.notifyAllNext(this[$subscribers], value);
+		Subscription.notifyAllNext(this[$subscribers], value);
 	}
 
 	subscribe(
 		onNextOrObserver: Partial<Observer<T>> | Observer<T>["next"],
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
-	): RefSubscription {
+	): Subscription {
 		const observer = createObserver(onNextOrObserver, onError, onComplete);
 
-		return RefSubscription.init(this, observer);
+		return Subscription.init(this, observer);
 	}
 
 	[$observable](): Ref<T, T> {
@@ -69,7 +70,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	}
 
 	abort(): void {
-		RefSubscription.notifyAllComplete(this[$subscribers]);
+		Subscription.notifyAllComplete(this[$subscribers]);
 		this[$flags] |= Flags.Aborted;
 		this[$subscribers] = null as any;
 		if (this[$options]?.signal) {

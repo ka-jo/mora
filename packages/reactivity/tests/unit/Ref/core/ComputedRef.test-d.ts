@@ -1,5 +1,5 @@
 import { ComputedRef } from "@/Ref/core/ComputedRef";
-import { Ref } from "@/Ref/types";
+import type { Ref } from "@/Ref";
 import { Observable } from "@/common/types";
 
 describe("ComputedRef", () => {

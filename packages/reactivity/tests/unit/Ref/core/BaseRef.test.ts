@@ -1,6 +1,6 @@
 import { $observable, $value } from "@/common/symbols";
+import { Subscription } from "@/common/Subscription";
 import { BaseRef } from "@/Ref/core/BaseRef";
-import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 describe("BaseRef", () => {
 	describe("constructor", () => {
@@ -118,13 +118,13 @@ describe("BaseRef", () => {
 			}).not.toThrowError();
 		});
 
-		it("should return a RefSubscription instance", () => {
+		it("should return a Subscription instance", () => {
 			const ref = new BaseRef(0);
 			const nextCallback = vi.fn();
 
 			const subscription = ref.subscribe(nextCallback);
 
-			expect(subscription).toBeInstanceOf(RefSubscription);
+			expect(subscription).toBeInstanceOf(Subscription);
 		});
 
 		it("should immediately trigger complete if the ref is aborted", () => {

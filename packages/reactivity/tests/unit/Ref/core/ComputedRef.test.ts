@@ -1,9 +1,8 @@
 import { Dependency } from "@/common/Dependency";
+import { Subscription } from "@/common/Subscription";
 import { Flags } from "@/common/flags";
 import { $dependencies, $flags, $observable, $value } from "@/common/symbols";
-import { Observable } from "@/common/types";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
-import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 describe("ComputedRef", () => {
 	describe("constructor", () => {
@@ -161,13 +160,13 @@ describe("ComputedRef", () => {
 			}).not.toThrowError();
 		});
 
-		it("should return a RefSubscription instance", () => {
+		it("should return a Subscription instance", () => {
 			const ref = new ComputedRef({ get: () => 0 });
 			const nextCallback = vi.fn();
 
 			const subscription = ref.subscribe(nextCallback);
 
-			expect(subscription).toBeInstanceOf(RefSubscription);
+			expect(subscription).toBeInstanceOf(Subscription);
 		});
 
 		it("should immediately trigger complete if the ref is aborted", () => {

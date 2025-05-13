@@ -11,21 +11,27 @@ import {
 	$compute,
 	$observer,
 } from "@/common/symbols";
-import { popTrackingContext, pushTrackingContext, track } from "@/common/tracking-context";
+import {
+	popTrackingContext,
+	pushTrackingContext,
+	track,
+	TrackingContext,
+} from "@/common/tracking-context";
 import type { Observable, Observer } from "@/common/types";
 import { Dependency } from "@/common/Dependency";
 import { createObserver } from "@/common/util";
+import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
-import { RefSubscription } from "@/Ref/core/RefSubscription";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
 
 /**
- * @internal */
+ * @internal
+ */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
-	[$subscribers]: Set<RefSubscription> = new Set();
+	[$subscribers]: Set<Subscription> = new Set();
 	[$dependencies]: Array<Dependency> = [];
 	[$flags]: number;
 	[$version]: number = 0;
@@ -52,7 +58,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			return this[$value] as TGet;
 		}
 
-		track(this);
+		track(this, $value);
 
 		if (this[$flags] & Flags.Dirty) {
 			ComputedRef.compute(this);
@@ -74,7 +80,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		onNextOrObserver: Partial<Observer<TGet>> | Observer<TGet>["next"],
 		onError?: Observer<TGet>["error"],
 		onComplete?: Observer<TGet>["complete"]
-	): RefSubscription {
+	): Subscription {
 		// If the ref hasn't been computed yet, we need to compute the current value
 		// in order to notify the subscriber of future values
 		if (this[$value] === INITIAL_VALUE && !(this[$flags] & Flags.Aborted))
@@ -87,7 +93,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 				// Only calls to `get` should throw, so we swallow the error here.
 			}
 
-		return RefSubscription.init(this, createObserver(onNextOrObserver, onError, onComplete));
+		return Subscription.init(this, createObserver(onNextOrObserver, onError, onComplete));
 	}
 
 	[$observable]() {
@@ -97,7 +103,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	abort(): void {
 		ComputedRef.unsubscribeFromDependencies(this);
 
-		RefSubscription.notifyAllComplete(this[$subscribers]);
+		Subscription.notifyAllComplete(this[$subscribers]);
 
 		this[$flags] |= Flags.Aborted;
 		this[$subscribers] = null as any;
@@ -125,7 +131,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		if (computedValue !== ref[$value]) {
 			ref[$value] = computedValue;
 			ref[$version]++;
-			RefSubscription.notifyAllNext(ref[$subscribers], computedValue);
+			Subscription.notifyAllNext(ref[$subscribers], computedValue);
 		}
 	}
 
@@ -139,7 +145,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		// If the ref is already queued or has no active susbscribers, we don't need to queue it
 		if (ref[$flags] & Flags.Queued || ref[$subscribers].size === 0) return;
 
-		RefSubscription.notifyAllDirty(ref[$subscribers]);
+		Subscription.notifyAllDirty(ref[$subscribers]);
 
 		ref[$flags] |= Flags.Queued;
 		queueMicrotask(ref[$compute]);
@@ -197,7 +203,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 			if (e instanceof Error === false) e = new Error(String(e));
 
-			RefSubscription.notifyAllError(ref[$subscribers], e as Error);
+			Subscription.notifyAllError(ref[$subscribers], e as Error);
 
 			throw e;
 		}
@@ -212,12 +218,15 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	 */
 	private static initDependencies(
 		observer: Partial<Observer>,
-		observables: Set<Observable>
+		trackingContext: TrackingContext
 	): Array<Dependency> {
-		const dependencies = new Array<Dependency>(observables.size);
+		const dependencies = new Array<Dependency>();
 		let i = 0;
-		for (const dep of observables) {
-			dependencies[i++] = new Dependency(dep, dep.subscribe(observer));
+		for (const { source, property } of trackingContext) {
+			// This isn't a ref access so we can ignore it
+			if (property !== $value) continue;
+
+			dependencies[i++] = new Dependency(source, source.subscribe(observer));
 		}
 		return dependencies;
 	}

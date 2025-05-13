@@ -1,9 +1,9 @@
-import { RefSubscription } from "@/Ref/core/RefSubscription";
+import { Subscription } from "@/common/Subscription";
 import { BaseRef } from "@/Ref/core/BaseRef";
 import { Observer } from "@/common/types";
 import { $subscribers } from "@/common/symbols";
 
-describe("RefSubscription", () => {
+describe("Subscription", () => {
 	let refMock: BaseRef;
 	let observerMock: Observer;
 
@@ -16,7 +16,7 @@ describe("RefSubscription", () => {
 
 	describe("closed property", () => {
 		it("should be readonly", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(() => {
 				// @ts-expect-error: closed is readonly
@@ -25,7 +25,7 @@ describe("RefSubscription", () => {
 		});
 
 		it("should be false initially", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(subscription.closed).toBe(false);
 		});
@@ -33,7 +33,7 @@ describe("RefSubscription", () => {
 
 	describe("enabled property", () => {
 		it("should be readonly", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(() => {
 				// @ts-expect-error: isEnabled is readonly
@@ -42,14 +42,14 @@ describe("RefSubscription", () => {
 		});
 
 		it("should be true initially", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 			expect(subscription.enabled).toBe(true);
 		});
 	});
 
 	describe("unsubscribe method", () => {
 		it("should set closed to true", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.unsubscribe();
 
@@ -57,7 +57,7 @@ describe("RefSubscription", () => {
 		});
 
 		it("should set enabled to false", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.unsubscribe();
 
@@ -65,13 +65,13 @@ describe("RefSubscription", () => {
 		});
 
 		it("should return undefined", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 			const result = subscription.unsubscribe();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(() => {
 				subscription.unsubscribe();
@@ -82,13 +82,13 @@ describe("RefSubscription", () => {
 
 	describe("enable method", () => {
 		it("should return undefined", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 			const result = subscription.enable();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(() => {
 				subscription.enable();
@@ -97,7 +97,7 @@ describe("RefSubscription", () => {
 		});
 
 		it("should set enabled to true", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.disable();
 
@@ -111,13 +111,13 @@ describe("RefSubscription", () => {
 
 	describe("disable method", () => {
 		it("should return undefined", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 			const result = subscription.disable();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			expect(() => {
 				subscription.disable();
@@ -126,7 +126,7 @@ describe("RefSubscription", () => {
 		});
 
 		it("should set enabled to false", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.disable();
 
@@ -136,45 +136,45 @@ describe("RefSubscription", () => {
 
 	describe("static notify method", () => {
 		it("should return undefined", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
-			const result = RefSubscription.notifyNext(subscription, "test");
+			const result = Subscription.notifyNext(subscription, "test");
 
 			expect(result).toBeUndefined();
 		});
 
 		it("should call observer's next method when subscription is enabled", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.enable();
 
 			expect(subscription.enabled).toBe(true);
 
-			RefSubscription.notifyNext(subscription, "test");
+			Subscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).toHaveBeenCalledWith("test");
 		});
 
 		it("should not call observer's next method when subscription is disabled", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.disable();
 
 			expect(subscription.enabled).toBe(false);
 
-			RefSubscription.notifyNext(subscription, "test");
+			Subscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).not.toHaveBeenCalled();
 		});
 
 		it("should not call observer's next method when subscription is closed", () => {
-			const subscription = new RefSubscription(refMock, observerMock);
+			const subscription = new Subscription(refMock, observerMock);
 
 			subscription.unsubscribe();
 
 			expect(subscription.closed).toBe(true);
 
-			RefSubscription.notifyNext(subscription, "test");
+			Subscription.notifyNext(subscription, "test");
 
 			expect(observerMock.next).not.toHaveBeenCalled();
 		});

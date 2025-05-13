@@ -1,10 +1,12 @@
 import { Flags } from "@/common/flags";
-import { $compute, $flags, $dependencies, $observer } from "@/common/symbols";
+import { $compute, $flags, $dependencies, $observer, $value } from "@/common/symbols";
 import {
 	popTrackingContext,
 	pushTrackingContext,
+	TrackingContext,
 } from "@/common/tracking-context";
-import { Observable, Observer, Subscription } from "@/common/types";
+import { Observable, Observer } from "@/common/types";
+import { Subscription } from "@/common/Subscription";
 import { EffectInstance } from "@/Effect/types";
 
 export class BaseEffect implements EffectInstance {
@@ -46,10 +48,7 @@ export class BaseEffect implements EffectInstance {
 
 		pushTrackingContext();
 		BaseEffect.tryRun(effect);
-		effect[$dependencies] = BaseEffect.initDependencies(
-			effect[$observer],
-			popTrackingContext()!
-		);
+		effect[$dependencies] = BaseEffect.initDependencies(effect[$observer], popTrackingContext()!);
 	}
 
 	private static onDependencyChange(effect: BaseEffect): void {
@@ -77,12 +76,15 @@ export class BaseEffect implements EffectInstance {
 
 	private static initDependencies(
 		observer: Partial<Observer>,
-		observables: Set<Observable>
+		trackingContext: TrackingContext
 	): Array<Subscription> {
-		const dependencies = new Array<Subscription>(observables.size);
+		const dependencies = new Array<Subscription>();
 		let i = 0;
-		for (const dep of observables) {
-			dependencies[i++] = dep.subscribe(observer);
+		for (const { source, property } of trackingContext) {
+			// This isn't a ref access, so we don't care about it
+			if (property !== $value) continue;
+
+			dependencies[i++] = source.subscribe(observer);
 		}
 		return dependencies;
 	}

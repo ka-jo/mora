@@ -1,8 +1,8 @@
 import type { Observable, Observer } from "@/common/types";
 import type { $ref, $flags, $version, $subscribers } from "@/common/symbols";
+import type { Subscription } from "@/common/Subscription";
 import type { Flags } from "@/common/flags";
 import type { RefConstructor } from "@/Ref/types";
-import type { RefSubscription } from "@/Ref/core/RefSubscription";
 
 /**
  * An instance of {@link (Ref:interface)} with no means of setting the value. {@link RefConstructor.readonly | Ref.readonly}
@@ -26,10 +26,10 @@ export interface ReadonlyRef<TGet> extends Observable<TGet> {
 	[$version]: number;
 	/**
 	 * The set of all current subscribers to the ref. This property is mutated
-	 * directly by {@link RefSubscription} to manage the subscription lifecycle.
+	 * directly by {@link Subscription} to manage the subscription lifecycle.
 	 *
 	 * @internal	 */
-	[$subscribers]: Set<RefSubscription>;
+	[$subscribers]: Set<Subscription>;
 	/**
 	 * The ref symbol is used internally to identify ref instances. It is not indended
 	 * to be used by consumers but is included here to act as a type brand.
@@ -49,11 +49,11 @@ export interface ReadonlyRef<TGet> extends Observable<TGet> {
 	 * the value, errors, and/or when the ref is completed.
 	 *
 	 * @param observer - an {@link Observer} object with callbacks for `next`, `error`, and/or `complete`.
-	 * @returns a {@link RefSubscription} object that can be used to manage the subscription.
+	 * @returns a {@link Subscription} object that can be used to manage the subscription.
 	 *
 	 * @public
 	 */
-	subscribe(observer: Partial<Observer<TGet>>): RefSubscription;
+	subscribe(observer: Partial<Observer<TGet>>): Subscription;
 	/**
 	 * Subscribes to the ref, allowing the subscriber to be notified of changes to
 	 * the value, errors, and/or when the ref is completed.
@@ -68,7 +68,7 @@ export interface ReadonlyRef<TGet> extends Observable<TGet> {
 		onNext: Observer<TGet>["next"],
 		onError?: Observer<TGet>["error"],
 		onComplete?: Observer<TGet>["complete"]
-	): RefSubscription;
+	): Subscription;
 	/**
 	 * A function that returns the ref instance itself. This is required when
 	 * implementing custom observables to ensure interop with other observable libraries.
