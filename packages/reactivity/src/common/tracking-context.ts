@@ -19,8 +19,21 @@ export function isTrackingContext(): boolean {
 	return _currentContext !== undefined;
 }
 
-export function track(source: Observable, property: PropertyKey): void {
-	if (_currentContext) _currentContext.push({ source, property });
+/**
+ * Tracks the access of an observable property. If there is an active tracking context, it will push the
+ * access onto the context stack and return true. If there is no active tracking context, it will return false.
+ *
+ * @param source - The observable that was accessed
+ * @param property - The property that was accessed
+ * @returns true if there is an active tracking context, false otherwise
+ */
+export function track(source: Observable, property: PropertyKey): boolean {
+	if (_currentContext) {
+		_currentContext.push({ source, property });
+		return true;
+	}
+
+	return false;
 }
 
 export type TrackingContext = Array<TrackedAccess>;

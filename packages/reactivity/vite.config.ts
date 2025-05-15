@@ -28,6 +28,7 @@ export default defineConfig({
 				const distPath = path.resolve(__dirname, "dist/reactivity.d.ts");
 				const symbolObservableContent = fs.readFileSync(srcPath, "utf-8");
 
+				// append the global type augmentation for the SymbolConstructor from the symbol-observable package
 				fs.appendFileSync(distPath, `\n${symbolObservableContent}`);
 			},
 		}),
@@ -36,7 +37,7 @@ export default defineConfig({
 		lib: {
 			entry: resolve(__dirname, "src/index.ts"),
 			name: "MoraReactivity",
-			fileName: (format) => `mora-reactivity.${format}.js`,
+			fileName: (format) => `reactivity.${format}.js`,
 			formats: ["es", "cjs", "umd"],
 		},
 		rollupOptions: {
