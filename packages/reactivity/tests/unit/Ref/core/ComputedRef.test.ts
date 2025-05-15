@@ -87,12 +87,12 @@ describe("ComputedRef", () => {
 			expect(() => ref.set(1)).toThrow(TypeError);
 		});
 
-		it("should return undefined", () => {
+		it("should return true if setter defined", () => {
 			const ref = new ComputedRef({ get: () => 0, set: () => {} });
 
 			const result = ref.set(1);
 
-			expect(result).toBeUndefined();
+			expect(result).toBe(true);
 		});
 
 		it("should call setter", () => {

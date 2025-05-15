@@ -3,6 +3,7 @@ import type { $ref, $flags, $version, $subscribers } from "@/common/symbols";
 import type { Subscription } from "@/common/Subscription";
 import type { Flags } from "@/common/flags";
 import type { RefConstructor } from "@/Ref/types";
+import { Ref } from "@/Ref/Ref";
 
 /**
  * An instance of {@link (Ref:interface)} with no means of setting the value. {@link RefConstructor.readonly | Ref.readonly}
@@ -10,65 +11,18 @@ import type { RefConstructor } from "@/Ref/types";
  *
  * @public
  */
-export interface ReadonlyRef<TGet> extends Observable<TGet> {
+export interface ReadonlyRef<TGet> extends Ref<TGet> {
 	/**
-	 * The state of any flags that are set on the ref. Refer to {@link Flags} for possible
-	 * states tracked with this field.
-	 *
-	 * @internal	 */
-	[$flags]: number;
-	/**
-	 * The version of the ref value. This is incremented each time the value changes,
-	 * using `===` to determine if the value requires a new version. This is used by
-	 * computed refs to determine if dependencies changed after being marked dirty.
-	 *
-	 * @internal	 */
-	[$version]: number;
-	/**
-	 * The set of all current subscribers to the ref. This property is mutated
-	 * directly by {@link Subscription} to manage the subscription lifecycle.
-	 *
-	 * @internal	 */
-	[$subscribers]: Set<Subscription>;
-	/**
-	 * The ref symbol is used internally to identify ref instances. It is not indended
+	 * The ref symbol is used internally to identify ref instances. It is not intended
 	 * to be used by consumers but is included here to act as a type brand.
 	 *
 	 * @internal
 	 */
 	[$ref]: ReadonlyRef<TGet>;
 	/**
-	 * Returns the current value of the ref. Calling this method will register the
-	 * ref as a dependency in the current tracking context, if one exists.
-	 *
-	 * @public
+	 * The set method should never be called on a ReadonlyRef. Doing so will throw a TypeError
 	 */
-	get(): TGet;
-	/**
-	 * Subscribes to the ref, allowing the subscriber to be notified of changes to
-	 * the value, errors, and/or when the ref is completed.
-	 *
-	 * @param observer - an {@link Observer} object with callbacks for `next`, `error`, and/or `complete`.
-	 * @returns a {@link Subscription} object that can be used to manage the subscription.
-	 *
-	 * @public
-	 */
-	subscribe(observer: Partial<Observer<TGet>>): Subscription;
-	/**
-	 * Subscribes to the ref, allowing the subscriber to be notified of changes to
-	 * the value, errors, and/or when the ref is completed.
-	 *
-	 * @param onNext - the function to be called when the ref value changes.
-	 * @param onError - (optional) the function to be called when an error occurs.
-	 * @param onComplete - (optional) the function to be called when the ref is completed.
-	 *
-	 * @public
-	 */
-	subscribe(
-		onNext: Observer<TGet>["next"],
-		onError?: Observer<TGet>["error"],
-		onComplete?: Observer<TGet>["complete"]
-	): Subscription;
+	set: never;
 	/**
 	 * A function that returns the ref instance itself. This is required when
 	 * implementing custom observables to ensure interop with other observable libraries.

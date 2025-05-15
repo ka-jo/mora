@@ -18,9 +18,9 @@ import type { Ref } from "@/Ref/Ref";
  */
 export interface RefConstructor {
 	<T>(_?: undefined, options?: RefOptions): Ref<undefined | T>;
-	<T>(value: T, options?: RefOptions): Ref<T>;
+	<T>(value: T | Ref<T>, options?: RefOptions): Ref<T>;
 	new <T>(_?: undefined, options?: RefOptions): Ref<undefined | T>;
-	new <T>(value: T, options?: RefOptions): Ref<T>;
+	new <T>(value: T | Ref<T>, options?: RefOptions): Ref<T>;
 
 	/**
 	 * Type guard that checks if a value is a {@link (Ref:interface)}

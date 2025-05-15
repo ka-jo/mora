@@ -67,13 +67,14 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		return this[$value] as TGet;
 	}
 
-	set(value: TSet): void {
-		if (this[$flags] & Flags.Aborted) return;
+	set(value: TSet): boolean {
+		if (this[$flags] & Flags.Aborted) return false;
 
 		if (!("set" in this[$options]))
 			throw new TypeError("Cannot set a computed ref defined without a setter");
 
 		this[$options].set(value);
+		return true;
 	}
 
 	subscribe(

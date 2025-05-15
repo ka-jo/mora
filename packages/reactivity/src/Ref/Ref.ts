@@ -83,7 +83,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 
 	/**
 	 * Returns the current value of the ref. Calling this method will register the
-	 * ref as a dependency in the current tracking context, if one exists.
+	 * ref as a dependency in the current tracking context if one exists.
 	 *
 	 * @public
 	 */
@@ -94,10 +94,11 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * subscribers of the change.
 	 *
 	 * @param value - The new value to set
+	 * @returns true if the value could be set, false otherwise (e.g. if the ref is readonly)
 	 *
 	 * @public
 	 */
-	set(value: TSet): void;
+	set(value: TSet | Ref<TGet>): boolean;
 
 	/**
 	 * Subscribes to the ref, allowing the subscriber to be notified of changes to

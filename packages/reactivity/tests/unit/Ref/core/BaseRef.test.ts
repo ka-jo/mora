@@ -26,12 +26,14 @@ describe("BaseRef", () => {
 	});
 
 	describe("set method", () => {
-		it("should return undefined", () => {
+		// This one is a bit weird, but currently, BaseRef has no reason to return anything but
+		// true when setting the value. This will change when we implement the readonly flag
+		it("should return true", () => {
 			const ref = new BaseRef(0);
 
 			const result = ref.set(1);
 
-			expect(result).toBeUndefined();
+			expect(result).toBe(true);
 		});
 
 		it("should set the value", () => {
@@ -244,6 +246,137 @@ describe("BaseRef", () => {
 			controller.abort();
 
 			expect(subscription.enabled).toBe(false);
+		});
+	});
+
+	describe("supports forwarding from other refs", () => {
+		describe("when constructed with a ref", () => {
+			it("should set the value to the forwarded ref's value", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(ref1);
+
+				expect(ref2[$value]).toBe(ref1[$value]);
+			});
+
+			it("should update the value when the forwarded ref's value changes", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(ref1);
+
+				ref1.set(1);
+
+				expect(ref2[$value]).toBe(1);
+			});
+
+			it("should notify subscribers when the forwarded ref's value changes", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(ref1);
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref1.set(1);
+
+				expect(nextCallback).toHaveBeenCalledWith(1);
+			});
+
+			it("should not notify subscribers when the forwarded ref's value is set to the same value", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(ref1);
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref1.set(0);
+
+				expect(nextCallback).not.toHaveBeenCalled();
+			});
+
+			it("should cancel forwarding when a new value is set on the ref", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(ref1);
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref2.set(1);
+
+				expect(nextCallback).toHaveBeenCalledTimes(1);
+				expect(ref2[$value]).toBe(1);
+
+				ref1.set(2);
+
+				expect(nextCallback).toHaveBeenCalledTimes(1);
+				expect(ref2[$value]).toBe(1);
+			});
+		});
+
+		describe("when set with a ref", () => {
+			it("should set the value to the forwarded ref's value", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(1);
+
+				ref2.set(ref1);
+
+				expect(ref2[$value]).toBe(ref1[$value]);
+			});
+
+			it("should update the value when the forwarded ref's value changes", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(1);
+
+				ref2.set(ref1);
+
+				expect(ref2[$value]).toBe(0);
+
+				ref1.set(42);
+
+				expect(ref2[$value]).toBe(42);
+			});
+
+			it("should notify subscribers when the forwarded ref's value changes", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(1);
+
+				ref2.set(ref1);
+
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref1.set(42);
+
+				expect(nextCallback).toHaveBeenCalledWith(42);
+			});
+
+			it("should not notify subscribers when the forwarded ref's value is set to the same value", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(1);
+
+				ref2.set(ref1);
+
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref1.set(0);
+
+				expect(nextCallback).not.toHaveBeenCalled();
+			});
+
+			it("should cancel forwarding when a new value is set on the ref", () => {
+				const ref1 = new BaseRef(0);
+				const ref2 = new BaseRef(1);
+
+				ref2.set(ref1);
+
+				const nextCallback = vi.fn();
+				ref2.subscribe(nextCallback);
+
+				ref2.set(42);
+
+				expect(nextCallback).toHaveBeenCalledTimes(1);
+				expect(ref2[$value]).toBe(42);
+
+				ref1.set(99);
+
+				expect(nextCallback).toHaveBeenCalledTimes(1);
+				expect(ref2[$value]).toBe(42);
+			});
 		});
 	});
 });
