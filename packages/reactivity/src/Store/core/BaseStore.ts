@@ -134,7 +134,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		if (isRef(storeValue)) {
 			store.refs[prop] = storeValue;
 
-			if (value !== undefined) storeValue.set(value);
+			if (arguments.length > 2) storeValue.set(value);
 
 			return storeValue;
 		}
@@ -149,11 +149,15 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 
 			store[$value][prop] = store.refs[prop] = ref;
 
-			if (value !== undefined) ref.set(value);
+			if (arguments.length > 2) ref.set(value);
 
 			return ref;
 		}
 
-		return (store[$value][prop] = store.refs[prop] = new BaseRef(value));
+		if (arguments.length > 2) {
+			return (store[$value][prop] = store.refs[prop] = new BaseRef(value));
+		} else {
+			return (store[$value][prop] = store.refs[prop] = new BaseRef(storeValue));
+		}
 	}
 }
