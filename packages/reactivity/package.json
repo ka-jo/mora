@@ -3,7 +3,8 @@
     "author": "Kaleb Baldwin",
     "license": "MIT",
     "version": "0.0.1",
-    "module": "dist/reactivity.esm.js",
+    "module": "dist/reactivity.es.js",
+    "main": "dist/reactivity.cjs.js",
     "types": "dist/reactivity.d.ts",
     "repository": {
         "type": "git",
@@ -16,5 +17,8 @@
     },
     "dependencies": {
         "symbol-observable": "^4.0.0"
+    },
+    "devDependencies": {
+        "@mora-js/reactivity": "workspace:*"
     }
 }

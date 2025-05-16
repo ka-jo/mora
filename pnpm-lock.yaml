@@ -32,6 +32,10 @@ importers:
       symbol-observable:
         specifier: ^4.0.0
         version: 4.0.0
+    devDependencies:
+      '@mora-js/reactivity':
+        specifier: workspace:*
+        version: 'link:'
 
 packages:
 

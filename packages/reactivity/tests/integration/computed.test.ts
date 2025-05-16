@@ -1,7 +1,5 @@
 import { flushMicrotasks } from "../fixtures/util";
-import { Flags } from "@/common/flags";
-import { $flags } from "@/common/symbols";
-import { Ref, ReadonlyRef } from "@/Ref";
+import { ReadonlyRef, Ref } from "@mora-js/reactivity";
 
 test("computed with one dependency", () => {
 	const count = Ref(1);
@@ -45,12 +43,12 @@ it("should be marked dirty when upstream dependencies change", () => {
 	const remainder = Ref.computed(() => count.get() % 2);
 	const isEven = Ref.computed(() => remainder.get() === 0);
 	const onDirty = vi.fn();
+	//@ts-expect-error: dirty is not a public API
 	isEven.subscribe({ dirty: onDirty });
 
 	count.set(3);
 
 	expect(onDirty).toHaveBeenCalled();
-	expect((isEven[$flags] & Flags.Dirty) === Flags.Dirty).toBe(true);
 });
 
 describe("lazy evaluation", () => {

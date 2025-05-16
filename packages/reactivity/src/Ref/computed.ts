@@ -1,4 +1,9 @@
-import type { ComputedRefOptions, RefConstructor, WritableComputedRefOptions } from "@/Ref/types";
+import type {
+	ComputedRefOptions,
+	ReadonlyRef,
+	RefConstructor,
+	WritableComputedRefOptions,
+} from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 
@@ -9,4 +14,4 @@ export const computed: RefConstructor["computed"] = function computed<TGet, TSet
 		getterOrOptions = { get: getterOrOptions };
 	}
 	return new ComputedRef(getterOrOptions);
-};
+} as RefConstructor["computed"];

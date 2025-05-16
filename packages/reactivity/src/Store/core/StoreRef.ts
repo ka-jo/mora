@@ -18,7 +18,7 @@ export class StoreRef<T = unknown> implements Ref<T, T> {
 		throw new Error("Method not implemented.");
 	}
 
-	set(value: T): void {
+	set(value: T): boolean {
 		throw new Error("Method not implemented.");
 	}
 
