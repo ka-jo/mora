@@ -33,7 +33,7 @@ export class StoreRef<T = unknown> implements Ref<T, T> {
 	}
 
 	[Symbol.observable](): Ref<T, T> {
-		throw new Error("Method not implemented.");
+		return this;
 	}
 
 	abort(): void {

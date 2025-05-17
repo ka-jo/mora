@@ -155,9 +155,9 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		}
 
 		if (arguments.length > 2) {
-			return (store[$value][prop] = store.refs[prop] = new BaseRef(value));
+			return (store[$value][prop] = store.refs[prop] = new BaseRef(value, { shallow: false }));
 		} else {
-			return (store[$value][prop] = store.refs[prop] = new BaseRef(storeValue));
+			return (store[$value][prop] = store.refs[prop] = new BaseRef(storeValue, { shallow: false }));
 		}
 	}
 }

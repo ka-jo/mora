@@ -9,13 +9,14 @@ import {
 	$version,
 	$dependencies,
 } from "@/common/symbols";
-import { createObserver } from "@/common/util";
+import { createObserver, isObject } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { track } from "@/common/tracking-context";
 import { Subscription } from "@/common/Subscription";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import { isRef } from "@/Ref/isRef";
+import { BaseStore } from "@/Store/core/BaseStore";
 
 const $forwardObserver = Symbol("forward-observer");
 
@@ -33,11 +34,10 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	[$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
-		if (isRef(value)) {
-			this[$value] = BaseRef.forwardRef(this, value);
-		} else {
-			this[$value] = value;
+		if (options?.shallow !== false) {
+			this[$flags] |= Flags.Shallow;
 		}
+		BaseRef.initValue(this, value);
 		this[$ref] = this;
 		this[$options] = options;
 		if (options?.signal) {
@@ -60,11 +60,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		if (this[$value] === value) return true;
 
-		if (isRef(value)) {
-			this[$value] = BaseRef.forwardRef(this, value);
-		} else {
-			this[$value] = value;
-		}
+		BaseRef.initValue(this, value);
 
 		if (this[$flags] & Flags.Aborted) return true;
 
@@ -98,6 +94,16 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		}
 	}
 
+	private static initValue<T>(ref: BaseRef<T>, value: T | Ref<T>): void {
+		if (isRef(value)) {
+			BaseRef.forwardRef(ref, value);
+		} else if (!(ref[$flags] & Flags.Shallow) && isObject(value)) {
+			ref[$value] = BaseStore.create(value);
+		} else {
+			ref[$value] = value;
+		}
+	}
+
 	/**
 	 * This method is used to forward the value of a source ref to a target ref. It subscribes to
 	 * the source ref using the {@link BaseRef.forwardValue} method, which will update the
@@ -107,7 +113,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	 * @param source - The source ref that will forward its value to the target ref
 	 * @returns the source ref's value
 	 */
-	private static forwardRef<T>(target: BaseRef<T>, source: Ref<T>): T {
+	private static forwardRef<T>(target: BaseRef<T>, source: Ref<T>): void {
 		let forwardObserver = target[$forwardObserver];
 		if (!forwardObserver)
 			forwardObserver = target[$forwardObserver] = createObserver(
@@ -116,7 +122,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		target[$dependencies] = source.subscribe(forwardObserver);
 
-		return source.get();
+		target[$value] = source.get();
 	}
 
 	/**
@@ -127,7 +133,11 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	 * @param value - The value to forward to the target ref
 	 */
 	private static forwardValue<T>(target: BaseRef<T>, value: T): void {
-		target[$value] = value;
+		if (!(target[$flags] & Flags.Shallow) && isObject(value)) {
+			target[$value] = BaseStore.create(value);
+		} else {
+			target[$value] = value;
+		}
 
 		if (target[$flags] & Flags.Aborted) return;
 

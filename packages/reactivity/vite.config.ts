@@ -34,22 +34,15 @@ export default defineConfig({
 		}),
 	],
 	build: {
+		target: "es2022",
 		lib: {
 			entry: resolve(__dirname, "src/index.ts"),
 			name: "MoraReactivity",
 			fileName: (format) => `reactivity.${format}.js`,
 			formats: ["es", "cjs", "umd"],
 		},
-		rollupOptions: {
-			external: ["symbol-observable"],
-			output: {
-				globals: {
-					"symbol-observable": "symbolObservable",
-				},
-			},
-		},
 		sourcemap: true,
-		minify: false,
+		minify: "esbuild",
 	},
 	test: {
 		globals: true,

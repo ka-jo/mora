@@ -16,9 +16,7 @@
     "sourceMap": true,                                   
 
     /* Completeness */
-    "skipLibCheck": true,
-
-    "types": ["vitest/globals"]                            
+    "skipLibCheck": true,                       
   },
   "exclude": ["node_modules"]
 }

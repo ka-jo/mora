@@ -12,4 +12,13 @@ export interface RefOptions {
 	 * @public
 	 */
 	signal?: AbortSignal;
+	/**
+	 * A boolean that indicates whether the ref should be shallow. If true, the ref will not
+	 * recursively convert object values to reactive objects.
+	 *
+	 * @defaultValue `true`
+	 *
+	 * @public
+	 */
+	shallow?: boolean;
 }

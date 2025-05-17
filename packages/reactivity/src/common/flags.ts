@@ -3,4 +3,5 @@ export const enum Flags {
 	Aborted = 1 << 1,
 	Dirty = 1 << 2,
 	Queued = 1 << 3,
+	Shallow = 1 << 4,
 }

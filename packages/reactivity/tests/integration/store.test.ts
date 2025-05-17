@@ -101,6 +101,40 @@ describe("Store", () => {
 		});
 	});
 
+	describe("deep reactivity", () => {
+		it("should return nested objects as stores", () => {
+			const store = Store({
+				user: {
+					name: "Rick",
+					age: 70,
+				},
+			});
+
+			expect(store.user).toEqual({
+				name: "Rick",
+				age: 70,
+			});
+
+			expect(Store.isStore(store.user)).toBe(true);
+		});
+
+		test("computed from nested store", () => {
+			const store = Store({
+				user: {
+					firstName: "Rick",
+					lastName: "Sanchez",
+				},
+			});
+
+			const fullName = Ref.computed(() => `${store.user.firstName} ${store.user.lastName}`);
+			expect(fullName.get()).toBe("Rick Sanchez");
+
+			store.user.firstName = "Morty";
+			store.user.lastName = "Smith";
+			expect(fullName.get()).toBe("Morty Smith");
+		});
+	});
+
 	describe("reactivity", () => {
 		test("computed from store", () => {
 			const store = Store({ firstName: "Rick", lastName: "Sanchez" });
