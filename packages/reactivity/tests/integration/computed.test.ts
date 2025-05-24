@@ -196,3 +196,23 @@ describe("error handling", () => {
 		}).toThrow();
 	});
 });
+
+test("diamond problem", () => {
+	const computeD = vi.fn(() => b.get() + c.get());
+	const onChangeD = vi.fn();
+	const a = Ref(1);
+	const b = Ref.computed(() => a.get() + 1);
+	const c = Ref.computed(() => a.get() + 1);
+	const d = Ref.computed(computeD);
+	d.subscribe(onChangeD);
+
+	expect(d.get()).toBe(4);
+	expect(computeD).toHaveBeenCalledTimes(1);
+	expect(onChangeD).toHaveBeenCalledTimes(0);
+
+	a.set(2);
+
+	expect(d.get()).toBe(6);
+	expect(computeD).toHaveBeenCalledTimes(2); // even though both b and c have changed, d only computes one more time
+	expect(onChangeD).toHaveBeenCalledTimes(1);
+});
