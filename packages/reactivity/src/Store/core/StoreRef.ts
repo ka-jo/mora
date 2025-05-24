@@ -5,12 +5,15 @@ import { Subscription } from "@/common/Subscription";
 import { Ref } from "@/Ref";
 
 export class StoreRef<T = unknown> implements Ref<T, T> {
-	[$flags]: number = 0;
-	[$version]: number = 0;
-	[$subscribers]: Set<Subscription> = new Set();
-	[$ref]: Ref<T, T>;
+	declare [$flags]: number;
+	declare [$version]: number;
+	declare [$subscribers]: Set<Subscription>;
+	declare [$ref]: Ref<T, T>;
 
 	constructor(value: T) {
+		this[$flags] = 0;
+		this[$version] = 0;
+		this[$subscribers] = new Set();
 		this[$ref] = this;
 	}
 

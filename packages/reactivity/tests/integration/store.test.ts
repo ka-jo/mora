@@ -106,6 +106,20 @@ describe("Store", () => {
 		});
 	});
 
+	describe("reactivity", () => {
+		test("computed from store", () => {
+			const store = Store({ firstName: "Rick", lastName: "Sanchez" });
+			const fullName = Ref.computed(() => `${store.firstName} ${store.lastName}`);
+
+			expect(fullName.get()).toBe("Rick Sanchez");
+
+			store.firstName = "Morty";
+			store.lastName = "Smith";
+
+			expect(fullName.get()).toBe("Morty Smith");
+		});
+	});
+
 	describe("deep reactivity", () => {
 		it("should return nested objects as stores", () => {
 			const store = Store({
@@ -114,8 +128,6 @@ describe("Store", () => {
 					age: 70,
 				},
 			});
-
-			const user = store.user;
 
 			expect(store.user).toEqual({
 				name: "Rick",
@@ -138,20 +150,6 @@ describe("Store", () => {
 
 			store.user.firstName = "Morty";
 			store.user.lastName = "Smith";
-			expect(fullName.get()).toBe("Morty Smith");
-		});
-	});
-
-	describe("reactivity", () => {
-		test("computed from store", () => {
-			const store = Store({ firstName: "Rick", lastName: "Sanchez" });
-			const fullName = Ref.computed(() => `${store.firstName} ${store.lastName}`);
-
-			expect(fullName.get()).toBe("Rick Sanchez");
-
-			store.firstName = "Morty";
-			store.lastName = "Smith";
-
 			expect(fullName.get()).toBe("Morty Smith");
 		});
 	});

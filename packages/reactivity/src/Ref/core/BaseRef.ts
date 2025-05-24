@@ -24,16 +24,19 @@ const $forwardObserver = Symbol("forward-observer");
  * @internal
  */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	[$subscribers]: Set<Subscription> = new Set();
-	[$flags]: number = 0;
-	[$version]: number = 0;
-	[$value]!: T;
-	[$ref]: BaseRef<T>;
-	[$options]?: RefOptions;
-	[$dependencies]?: Subscription;
-	[$forwardObserver]?: Partial<Observer<T>>;
+	declare [$subscribers]: Set<Subscription>;
+	declare [$flags]: number;
+	declare [$version]: number;
+	declare [$value]: T;
+	declare [$ref]: BaseRef<T>;
+	declare [$options]?: RefOptions;
+	declare [$dependencies]?: Subscription;
+	declare [$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
+		this[$flags] = 0;
+		this[$version] = 0;
+		this[$subscribers] = new Set();
 		if (options?.shallow !== false) {
 			this[$flags] |= Flags.Shallow;
 		}

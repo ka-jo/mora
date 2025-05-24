@@ -31,22 +31,27 @@ const INITIAL_VALUE: any = $value;
  * @internal
  */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
-	[$subscribers]: Set<Subscription> = new Set();
-	[$dependencies]: Array<Dependency> = [];
-	[$flags]: number;
-	[$version]: number = 0;
-	[$value]: TGet = INITIAL_VALUE;
-	[$ref]: ComputedRef<TGet, TSet>;
-	[$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
-	[$observer]: Partial<Observer>;
-	[$compute]: () => void;
+	declare [$subscribers]: Set<Subscription>;
+	declare [$dependencies]: Array<Dependency>;
+	declare [$flags]: number;
+	declare [$version]: number;
+	declare [$value]: TGet;
+	declare [$ref]: ComputedRef<TGet, TSet>;
+	declare [$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
+	declare [$observer]: Partial<Observer>;
+	declare [$compute]: () => void;
 
 	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
+		this[$subscribers] = new Set();
+		this[$dependencies] = [];
 		this[$flags] = Flags.Dirty;
-		this[$options] = options;
+		this[$version] = 0;
+		this[$value] = INITIAL_VALUE;
 		this[$ref] = this;
+		this[$options] = options;
 		this[$observer] = ComputedRef.initObserver(this);
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
+
 		if (options.signal) {
 			this.abort = this.abort.bind(this);
 			options.signal.addEventListener("abort", this.abort);

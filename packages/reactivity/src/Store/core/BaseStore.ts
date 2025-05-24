@@ -33,19 +33,22 @@ import { BaseRef } from "@/Ref/core/BaseRef";
 export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyKey, unknown>>
 	implements ProxyHandler<T>, Observable<T>
 {
-	[$flags]: number = 0;
-	[$version]: number = 0;
-	[$value]: T;
-	[$subscribers]: Set<Subscription> = new Set();
-	[$store]: BaseStore<T>;
+	declare [$flags]: number;
+	declare [$version]: number;
+	declare [$value]: T;
+	declare [$subscribers]: Set<Subscription>;
+	declare [$store]: BaseStore<T>;
 
-	proxy!: Store<T>;
-	refs: Record<PropertyKey, Ref> = Object.create(null);
+	declare proxy: Store<T>;
+	declare refs: Record<PropertyKey, Ref>;
 
 	// Because the proxy must be created after the store, a BaseStore instance must be created via
 	// the static create method, so the constructor is private.
 	private constructor(object: T) {
+		this[$flags] = 0;
+		this[$version] = 0;
 		this[$value] = object;
+		this[$subscribers] = new Set();
 		this[$store] = this;
 		Object.defineProperty(object, $store, {
 			value: this,
@@ -53,6 +56,8 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 			configurable: false,
 			writable: false,
 		});
+
+		this.refs = Object.create(null);
 	}
 
 	subscribe(
