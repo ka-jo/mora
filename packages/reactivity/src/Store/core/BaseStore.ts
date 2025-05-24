@@ -92,7 +92,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 			return targetValue.get();
 		}
 
-		if (isObject(targetValue)) return BaseStore.initPropertyRef(this, prop);
+		if (isObject(targetValue)) return BaseStore.initPropertyRef(this, prop).get();
 
 		return targetValue;
 	}
