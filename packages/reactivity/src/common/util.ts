@@ -38,3 +38,7 @@ export function createObserver<T>(
 export function isObject(value: unknown): value is Record<PropertyKey, unknown> {
 	return typeof value === "object" && value !== null;
 }
+
+export function isSymbol(value: unknown): value is symbol {
+	return typeof value === "symbol";
+}

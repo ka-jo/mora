@@ -2,6 +2,11 @@ import { Store, Ref } from "@mora-js/reactivity";
 import { flushMicrotasks } from "../fixtures/util";
 
 describe("Store", () => {
+	it("should return a store", () => {
+		const store = Store({ count: 0 });
+		expect(Store.isStore(store)).toBe(true);
+	});
+
 	it("should initialize primitive values", () => {
 		const store = Store({ count: 0, name: "test" });
 		expect(store).toEqual({ count: 0, name: "test" });
@@ -109,6 +114,8 @@ describe("Store", () => {
 					age: 70,
 				},
 			});
+
+			const user = store.user;
 
 			expect(store.user).toEqual({
 				name: "Rick",

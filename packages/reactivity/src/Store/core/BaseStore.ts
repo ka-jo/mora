@@ -2,7 +2,7 @@ import { $flags, $version, $store, $subscribers, $value } from "@/common/symbols
 import { track } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
-import { createObserver } from "@/common/util";
+import { createObserver, isObject, isSymbol } from "@/common/util";
 import type { Store } from "@/Store/Store";
 import type { Ref, WritableComputedRefOptions } from "@/Ref";
 import { isRef } from "@/Ref/isRef";
@@ -74,6 +74,8 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 
 		if (this.refs[prop]) return this.refs[prop].get();
 
+		if (isSymbol(prop)) return target[prop];
+
 		// If it's a tracking context, we need to ensure that the property ref is initialized
 		if (isTrackingContext) return BaseStore.initPropertyRef(this, prop).get();
 
@@ -84,6 +86,8 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 			this.refs[prop] = targetValue;
 			return targetValue.get();
 		}
+
+		if (isObject(targetValue)) return BaseStore.initPropertyRef(this, prop);
 
 		return targetValue;
 	}
