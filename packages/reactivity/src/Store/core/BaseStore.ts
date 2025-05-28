@@ -2,7 +2,7 @@ import { $flags, $version, $store, $subscribers, $value } from "@/common/symbols
 import { track } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
-import { createObserver, isObject, isSymbol } from "@/common/util";
+import { createObserver, getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
 import type { Store } from "@/Store/Store";
 import type { Ref, WritableComputedRefOptions } from "@/Ref";
 import { isRef } from "@/Ref/isRef";
@@ -148,13 +148,12 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 			return storeValue;
 		}
 
-		const descriptor = Object.getOwnPropertyDescriptor(store[$value], prop);
-		if (descriptor && descriptor.get) {
-			const options = { get: descriptor.get.bind(store) };
-			if (descriptor.set) {
-				(options as WritableComputedRefOptions<unknown>).set = descriptor.set.bind(store);
-			}
-			const ref = new ComputedRef(options);
+		const descriptor = getPropertyDescriptor(store[$value], prop);
+		if (descriptor && (descriptor.get || descriptor.set)) {
+			const ref = new ComputedRef({
+				get: descriptor.get?.bind(store),
+				set: descriptor.set?.bind(store),
+			} as WritableComputedRefOptions<unknown>);
 
 			store[$value][prop] = store.refs[prop] = ref;
 

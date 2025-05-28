@@ -57,6 +57,52 @@ describe("Store", () => {
 		expect(store.fullName).toBe("Morty Smith");
 	});
 
+	it("should support setters with no getter", () => {
+		const store = Store({
+			count: 0,
+			set increment(value: number) {
+				this.count += value;
+			},
+		});
+
+		expect(store.count).toBe(0);
+
+		store.increment = 5;
+
+		expect(store.count).toBe(5);
+
+		store.increment = 3;
+
+		expect(store.count).toBe(8);
+	});
+
+	it("should support getter/setter on prototype", () => {
+		class Parent {
+			constructor(public firstName: string, public lastName: string) {}
+
+			get fullName() {
+				return `${this.firstName} ${this.lastName}`;
+			}
+
+			set fullName(value: string) {
+				const [firstName, lastName] = value.split(" ");
+				this.firstName = firstName;
+				this.lastName = lastName;
+			}
+		}
+
+		class Child extends Parent {}
+
+		const store = Store(new Child("Rick", "Sanchez"));
+
+		expect(store.fullName).toBe("Rick Sanchez");
+
+		store.fullName = "Morty Smith";
+
+		expect(store.firstName).toBe("Morty");
+		expect(store.lastName).toBe("Smith");
+	});
+
 	describe("assigning a ref to a store property", () => {
 		it("should unwrap the ref", () => {
 			const store = Store({ count: 0 });

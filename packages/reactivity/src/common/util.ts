@@ -42,3 +42,29 @@ export function isObject(value: unknown): value is Record<PropertyKey, unknown> 
 export function isSymbol(value: unknown): value is symbol {
 	return typeof value === "symbol";
 }
+
+/**
+ * This function retrieves the property descriptor for a given property on an object, including
+ * properties inherited from the prototype chain. It traverses up the prototype chain until it
+ * finds the property or reaches the end of the chain in which case it returns `undefined`.
+ *
+ * @param obj - The object to search for the property descriptor.
+ * @param prop - The property key to look for in the object.
+ * @returns a `PropertyDescriptor` if found for the given prop, otherwise `undefined`.
+ *
+ * @privateRemarks
+ * The original motivation for this function was to allow stores to be created from class instances
+ * that have getters/setters defined on a parent class as `Object.getOwnPropertyDescriptor` will
+ * only return descriptors for properties that are directly defined on the object itself.
+ */
+export function getPropertyDescriptor(
+	obj: object,
+	prop: PropertyKey
+): PropertyDescriptor | undefined {
+	while (obj) {
+		const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
+		if (descriptor) return descriptor;
+		obj = Object.getPrototypeOf(obj);
+	}
+	return undefined;
+}
