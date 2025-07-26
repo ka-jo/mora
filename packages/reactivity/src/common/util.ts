@@ -53,9 +53,8 @@ export function isSymbol(value: unknown): value is symbol {
  * @returns a `PropertyDescriptor` if found for the given prop, otherwise `undefined`.
  *
  * @privateRemarks
- * The original motivation for this function was to allow stores to be created from class instances
- * that have getters/setters defined on a parent class as `Object.getOwnPropertyDescriptor` will
- * only return descriptors for properties that are directly defined on the object itself.
+ * The original motivation for this function was to enable inheritance of getters/setters in
+ * stores
  */
 export function getPropertyDescriptor(
 	obj: object,
