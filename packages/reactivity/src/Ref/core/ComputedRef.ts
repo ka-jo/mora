@@ -134,7 +134,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		pushTrackingContext();
 		const computedValue = ComputedRef.tryGet(ref);
 		ref[$dependencies] = ComputedRef.initDependencies(ref[$observer], popTrackingContext()!);
-		if (computedValue !== ref[$value]) {
+		if (!Object.is(computedValue, ref[$value])) {
 			ref[$value] = computedValue;
 			ref[$version]++;
 			ref[$subscribers].next(computedValue);

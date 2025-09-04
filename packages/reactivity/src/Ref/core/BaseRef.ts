@@ -61,7 +61,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		// value is different or not
 		this[$dependencies]?.unsubscribe();
 
-		if (this[$value] === value) return true;
+		if (Object.is(this[$value], value)) return true;
 
 		BaseRef.initValue(this, value);
 
