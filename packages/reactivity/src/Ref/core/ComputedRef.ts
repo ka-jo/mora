@@ -7,7 +7,6 @@ import {
 	$value,
 	$dependencies,
 	$observable,
-	$version,
 	$compute,
 	$observer,
 } from "@/common/symbols";
@@ -35,7 +34,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	declare [$subscribers]: SubscriptionList;
 	declare [$dependencies]: Array<Dependency>;
 	declare [$flags]: number;
-	declare [$version]: number;
 	declare [$value]: TGet;
 	declare [$ref]: ComputedRef<TGet, TSet>;
 	declare [$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
@@ -46,7 +44,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$subscribers] = new SubscriptionList();
 		this[$dependencies] = [];
 		this[$flags] = Flags.Dirty;
-		this[$version] = 0;
 		this[$value] = INITIAL_VALUE;
 		this[$ref] = this;
 		this[$options] = options;
@@ -136,7 +133,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		ref[$dependencies] = ComputedRef.initDependencies(ref[$observer], popTrackingContext()!);
 		if (!Object.is(computedValue, ref[$value])) {
 			ref[$value] = computedValue;
-			ref[$version]++;
 			ref[$subscribers].next(computedValue);
 		}
 	}

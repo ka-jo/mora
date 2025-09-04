@@ -5,7 +5,7 @@ import { computed } from "@/Ref/computed";
 import type { Observable, Observer } from "@/common/types";
 import type { Subscription } from "@/common/Subscription";
 import type { SubscriptionList } from "@/common/SubscriptionList";
-import { $flags, $subscribers, $version, $ref } from "@/common/symbols";
+import { $flags, $subscribers, $ref } from "@/common/symbols";
 
 /**
  * The `Ref` interface is the core reactive object in Mora. A ref instance holds a value
@@ -41,15 +41,6 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 * @internal
 	 */
 	[$flags]: number;
-
-	/**
-	 * The version of the ref value. This is incremented each time the value changes,
-	 * using `===` to determine if the value requires a new version. This is used by
-	 * computed refs to determine if dependencies changed after being marked dirty.
-	 *
-	 * @internal
-	 */
-	[$version]: number;
 
 	/**
 	 * The set of all current subscribers to the ref. This property is mutated

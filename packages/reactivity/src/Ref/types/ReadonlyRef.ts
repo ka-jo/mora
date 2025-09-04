@@ -1,5 +1,5 @@
 import type { Observable, Observer } from "@/common/types";
-import type { $ref, $flags, $version, $subscribers } from "@/common/symbols";
+import type { $ref, $flags, $subscribers } from "@/common/symbols";
 import type { Subscription } from "@/common/Subscription";
 import type { Flags } from "@/common/flags";
 import type { RefConstructor } from "@/Ref/types";

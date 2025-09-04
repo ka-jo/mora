@@ -7,7 +7,6 @@ export const $flags: unique symbol = Symbol("flags");
 export const $ref: unique symbol = Symbol("ref");
 export const $options: unique symbol = Symbol("options");
 export const $dependencies: unique symbol = Symbol("dependencies");
-export const $version: unique symbol = Symbol("version");
 export const $compute: unique symbol = Symbol("compute");
 export const $observer: unique symbol = Symbol("observer");
 export const $store: unique symbol = Symbol("store");

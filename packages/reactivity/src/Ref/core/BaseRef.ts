@@ -6,7 +6,6 @@ import {
 	$flags,
 	$ref,
 	$options,
-	$version,
 	$dependencies,
 } from "@/common/symbols";
 import { createObserver, isObject } from "@/common/util";
@@ -27,7 +26,6 @@ const $forwardObserver = Symbol("forward-observer");
 export class BaseRef<T = unknown> implements Ref<T, T> {
 	declare [$subscribers]: SubscriptionList;
 	declare [$flags]: number;
-	declare [$version]: number;
 	declare [$value]: T;
 	declare [$ref]: BaseRef<T>;
 	declare [$options]?: RefOptions;
@@ -37,7 +35,6 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	constructor(value: T | Ref<T>, options?: RefOptions) {
 		this[$subscribers] = new SubscriptionList();
 		this[$flags] = 0;
-		this[$version] = 0;
 		this[$ref] = this;
 		this[$options] = options;
 
@@ -66,8 +63,6 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		BaseRef.initValue(this, value);
 
 		if (this[$flags] & Flags.Aborted) return true;
-
-		this[$version]++;
 
 		this[$subscribers].next(value);
 
@@ -143,8 +138,6 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		}
 
 		if (target[$flags] & Flags.Aborted) return;
-
-		target[$version]++;
 
 		target[$subscribers].next(value);
 	}

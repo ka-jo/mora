@@ -1,4 +1,4 @@
-import { $flags, $version, $store, $subscribers, $value } from "@/common/symbols";
+import { $flags, $store, $subscribers, $value } from "@/common/symbols";
 import { track } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
@@ -35,7 +35,6 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 	implements ProxyHandler<T>, Observable<T>
 {
 	declare [$flags]: number;
-	declare [$version]: number;
 	declare [$value]: T;
 	declare [$subscribers]: SubscriptionList;
 	declare [$store]: BaseStore<T>;
@@ -47,7 +46,6 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 	// the static create method, so the constructor is private.
 	private constructor(object: T) {
 		this[$flags] = 0;
-		this[$version] = 0;
 		this[$value] = object;
 		this[$subscribers] = new SubscriptionList();
 		this[$store] = this;
