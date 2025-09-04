@@ -1,5 +1,5 @@
 import type { Observable, Observer } from "@/common/types";
-import { $flags, $observable, $observer, $subscribers } from "@/common/symbols";
+import { $flags, $next, $observable, $observer, $prev, $subscribers } from "@/common/symbols";
 import { Flags } from "@/common/flags";
 import { NO_OP } from "@/common/util";
 
@@ -18,6 +18,8 @@ export class Subscription {
 	[$flags]: number = Flags.Enabled;
 	[$observable]: Observable;
 	[$observer]: Observer;
+	[$prev]: Subscription | null = null;
+	[$next]: Subscription | null = null;
 
 	constructor(observable: Observable, observer: Observer<unknown>) {
 		this[$observable] = observable;
@@ -33,9 +35,19 @@ export class Subscription {
 	}
 
 	unsubscribe(): void {
-		if (this.closed) return;
+		if (this[$flags] & Flags.Aborted) return;
 
-		this[$observable][$subscribers].delete(this);
+		if (this[$prev]) {
+			this[$prev][$next] = this[$next];
+		} else {
+			// We're the head, update the list's head
+			this[$observable][$subscribers].head = this[$next];
+		}
+
+		if (this[$next]) {
+			this[$next][$prev] = this[$prev];
+		}
+
 		Subscription.cleanup(this);
 	}
 
@@ -66,39 +78,11 @@ export class Subscription {
 		return subscription;
 	}
 
-	static notifyNext(subscription: Subscription, value: unknown) {
-		if (subscription[$flags] & Flags.Enabled) subscription[$observer].next(value);
-	}
-
-	static notifyAllNext(subscriptions: Set<Subscription>, value: unknown) {
-		for (const subscription of subscriptions) Subscription.notifyNext(subscription, value);
-	}
-
-	static notifyError(subscription: Subscription, error: Error) {
-		if (subscription[$flags] & Flags.Enabled) subscription[$observer].error(error);
-	}
-
-	static notifyAllError(subscriptions: Set<Subscription>, error: Error) {
-		for (const subscription of subscriptions) Subscription.notifyError(subscription, error);
-	}
-
-	static notifyComplete(subscription: Subscription) {
-		if (subscription[$flags] & Flags.Enabled) subscription[$observer].complete();
-
-		Subscription.cleanup(subscription);
-	}
-
-	static notifyAllComplete(subscriptions: Set<Subscription>) {
-		for (const subscription of subscriptions) Subscription.notifyComplete(subscription);
-	}
-
-	static notifyAllDirty(subscriptions: Set<Subscription>) {
-		for (const subscription of subscriptions) subscription[$observer].dirty();
-	}
-
 	static cleanup(subscription: Subscription) {
 		subscription[$flags] = Flags.Aborted;
 		subscription[$observable] = null as any;
 		subscription[$observer] = null as any;
+		subscription[$prev] = null;
+		subscription[$next] = null;
 	}
 }

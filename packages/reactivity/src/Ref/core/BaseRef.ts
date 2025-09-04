@@ -13,6 +13,7 @@ import { createObserver, isObject } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { track } from "@/common/tracking-context";
 import { Subscription } from "@/common/Subscription";
+import { SubscriptionList } from "@/common/SubscriptionList";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import { isRef } from "@/Ref/isRef";
@@ -24,7 +25,7 @@ const $forwardObserver = Symbol("forward-observer");
  * @internal
  */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	declare [$subscribers]: Set<Subscription>;
+	declare [$subscribers]: SubscriptionList;
 	declare [$flags]: number;
 	declare [$version]: number;
 	declare [$value]: T;
@@ -34,15 +35,14 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	declare [$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
+		this[$subscribers] = new SubscriptionList();
 		this[$flags] = 0;
 		this[$version] = 0;
-		this[$subscribers] = new Set();
-		if (options?.shallow !== false) {
-			this[$flags] |= Flags.Shallow;
-		}
-		BaseRef.initValue(this, value);
 		this[$ref] = this;
 		this[$options] = options;
+
+		BaseRef.initValue(this, value);
+
 		if (options?.signal) {
 			this.abort = this.abort.bind(this);
 			options.signal.addEventListener("abort", this.abort);
@@ -69,7 +69,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		this[$version]++;
 
-		Subscription.notifyAllNext(this[$subscribers], value);
+		this[$subscribers].next(value);
 
 		return true;
 	}
@@ -79,9 +79,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		const observer = createObserver(onNextOrObserver, onError, onComplete);
-
-		return Subscription.init(this, observer);
+		return this[$subscribers].initSubscription(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[$observable](): Ref<T, T> {
@@ -89,9 +87,11 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	}
 
 	abort(): void {
-		Subscription.notifyAllComplete(this[$subscribers]);
+		this[$dependencies]?.unsubscribe();
+
+		this[$subscribers].complete();
+
 		this[$flags] |= Flags.Aborted;
-		this[$subscribers] = null as any;
 		if (this[$options]?.signal) {
 			this[$options].signal.removeEventListener("abort", this.abort);
 		}
@@ -146,6 +146,6 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		target[$version]++;
 
-		Subscription.notifyAllNext(target[$subscribers], value);
+		target[$subscribers].next(value);
 	}
 }

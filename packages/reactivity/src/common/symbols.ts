@@ -11,3 +11,5 @@ export const $version: unique symbol = Symbol("version");
 export const $compute: unique symbol = Symbol("compute");
 export const $observer: unique symbol = Symbol("observer");
 export const $store: unique symbol = Symbol("store");
+export const $prev: unique symbol = Symbol("prev");
+export const $next: unique symbol = Symbol("next");

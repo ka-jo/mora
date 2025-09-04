@@ -2,18 +2,19 @@ import { $flags, $ref, $subscribers, $version } from "@/common/symbols";
 import { Observer } from "@/common/types";
 import { createObserver } from "@/common/util";
 import { Subscription } from "@/common/Subscription";
+import { SubscriptionList } from "@/common/SubscriptionList";
 import { Ref } from "@/Ref";
 
 export class StoreRef<T = unknown> implements Ref<T, T> {
 	declare [$flags]: number;
 	declare [$version]: number;
-	declare [$subscribers]: Set<Subscription>;
+	declare [$subscribers]: SubscriptionList;
 	declare [$ref]: Ref<T, T>;
 
 	constructor(value: T) {
 		this[$flags] = 0;
 		this[$version] = 0;
-		this[$subscribers] = new Set();
+		this[$subscribers] = new SubscriptionList();
 		this[$ref] = this;
 	}
 

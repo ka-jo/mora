@@ -1,5 +1,6 @@
 import type { Observer } from "@/common/types";
 import type { Subscription } from "@/common/Subscription";
+import type { SubscriptionList } from "../SubscriptionList";
 import { $compute, $flags, $observable, $subscribers, $version } from "@/common/symbols";
 
 /**
@@ -38,7 +39,7 @@ export interface Observable<T = unknown> {
 	/**
 	 * @internal
 	 */
-	[$subscribers]: Set<Subscription>;
+	[$subscribers]: SubscriptionList;
 	/**
 	 * @internal
 	 */

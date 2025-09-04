@@ -2,10 +2,10 @@ import { RefOptions, RefConstructor } from "@/Ref/types";
 import { BaseRef } from "@/Ref/core/BaseRef";
 import { isRef } from "@/Ref/isRef";
 import { computed } from "@/Ref/computed";
-import type { Subscription } from "@/common/Subscription";
 import type { Observable, Observer } from "@/common/types";
-import type { $ref, $flags, $version, $subscribers } from "@/common/symbols";
-import type { Flags } from "@/common/flags";
+import type { Subscription } from "@/common/Subscription";
+import type { SubscriptionList } from "@/common/SubscriptionList";
+import { $flags, $subscribers, $version, $ref } from "@/common/symbols";
 
 /**
  * The `Ref` interface is the core reactive object in Mora. A ref instance holds a value
@@ -57,7 +57,7 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	 *
 	 * @internal
 	 */
-	[$subscribers]: Set<Subscription>;
+	[$subscribers]: SubscriptionList;
 
 	/**
 	 * The ref symbol is used internally to identify ref instances. It is not intended
