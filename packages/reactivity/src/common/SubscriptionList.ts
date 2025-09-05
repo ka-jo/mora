@@ -25,40 +25,51 @@ export class SubscriptionList<T = unknown> implements Observer<T> {
 	}
 
 	/**
-	 * Notify all enabled subscriptions with a new value.
+	 * Notify all subscriptions with a new value.
+	 *
+	 * @remarks
+	 * This method iterates through all subscriptions in the list and calls their
+	 * observer's `next` method. Since disabled subscriptions are removed from the
+	 * list, no flag checking is needed during iteration for optimal performance.
+	 *
+	 * @param value - The value to send to all subscribers
 	 */
 	next(value: T): void {
 		let subscription = this.head;
 		while (subscription) {
-			if (subscription[$flags] & Flags.Enabled) {
-				subscription[$observer].next(value);
-			}
+			subscription[$observer].next(value);
 			subscription = subscription[$next];
 		}
 	}
 
 	/**
-	 * Notify all enabled subscriptions of an error.
+	 * Notify all subscriptions of an error.
+	 *
+	 * @remarks
+	 * Since disabled subscriptions are removed from the list, no flag checking
+	 * is needed during iteration for optimal performance.
+	 *
+	 * @param error - The error to send to all subscribers
 	 */
 	error(error: Error): void {
 		let subscription = this.head;
 		while (subscription) {
-			if (subscription[$flags] & Flags.Enabled) {
-				subscription[$observer].error(error);
-			}
+			subscription[$observer].error(error);
 			subscription = subscription[$next];
 		}
 	}
 
 	/**
-	 * Notify all enabled subscriptions that the observable is complete.
+	 * Notify all subscriptions that the observable is complete.
+	 *
+	 * @remarks
+	 * Since disabled subscriptions are removed from the list, no flag checking
+	 * is needed. All subscriptions in the list will be notified and then cleaned up.
 	 */
 	complete(): void {
 		let subscription = this.head;
 		while (subscription) {
-			if (subscription[$flags] & Flags.Enabled) {
-				subscription[$observer].complete();
-			}
+			subscription[$observer].complete();
 			const next = subscription[$next];
 			Subscription.cleanup(subscription);
 			subscription = next;
