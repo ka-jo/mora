@@ -16,9 +16,8 @@ import {
 	track,
 	TrackingContext,
 } from "@/common/tracking-context";
-import type { Observable, Observer } from "@/common/types";
+import type { Observer } from "@/common/types";
 import { Dependency } from "@/common/Dependency";
-import { createObserver } from "@/common/util";
 import { Subscription } from "@/common/Subscription";
 import { SubscriptionList } from "@/common/SubscriptionList";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
@@ -128,9 +127,10 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 		ComputedRef.unsubscribeFromDependencies(ref);
 
-		pushTrackingContext();
+		pushTrackingContext(ref[$observer]);
 		const computedValue = ComputedRef.tryGet(ref);
-		ref[$dependencies] = ComputedRef.initDependencies(ref[$observer], popTrackingContext()!);
+		ref[$dependencies] = popTrackingContext()!;
+
 		if (!Object.is(computedValue, ref[$value])) {
 			ref[$value] = computedValue;
 			ref[$subscribers].next(computedValue);
@@ -209,27 +209,5 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 			throw e;
 		}
-	}
-
-	/**
-	 * This function subscribes to a list of observables using the provided observer and uses the subscriptions
-	 * to populate an array of dependencies.
-	 * @param observer - The observer to use when subscribing to the dependencies
-	 * @param observables - The set of all observables to subscribe to and use as sources for the dependencies
-	 * @returns an array of dependencies
-	 */
-	private static initDependencies(
-		observer: Partial<Observer>,
-		trackingContext: TrackingContext
-	): Array<Dependency> {
-		const dependencies = new Array<Dependency>();
-		let i = 0;
-		for (const { source, property } of trackingContext) {
-			// This isn't a ref access so we can ignore it
-			if (property !== $value) continue;
-
-			dependencies[i++] = new Dependency(source, source.subscribe(observer));
-		}
-		return dependencies;
 	}
 }
