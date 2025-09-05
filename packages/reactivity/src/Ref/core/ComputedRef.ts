@@ -14,10 +14,9 @@ import {
 	popTrackingContext,
 	pushTrackingContext,
 	track,
-	TrackingContext,
+	DependencySet,
 } from "@/common/tracking-context";
 import type { Observer } from "@/common/types";
-import { Dependency } from "@/common/Dependency";
 import { Subscription } from "@/common/Subscription";
 import { SubscriptionList } from "@/common/SubscriptionList";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
@@ -31,7 +30,7 @@ const INITIAL_VALUE: any = $value;
  */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
 	declare [$subscribers]: SubscriptionList;
-	declare [$dependencies]: Array<Dependency>;
+	declare [$dependencies]: DependencySet;
 	declare [$flags]: number;
 	declare [$value]: TGet;
 	declare [$ref]: ComputedRef<TGet, TSet>;
@@ -41,7 +40,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
 		this[$subscribers] = new SubscriptionList();
-		this[$dependencies] = [];
+		this[$dependencies] = DependencySet.NULL;
 		this[$flags] = Flags.Dirty;
 		this[$value] = INITIAL_VALUE;
 		this[$ref] = this;
@@ -104,7 +103,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	}
 
 	abort(): void {
-		ComputedRef.unsubscribeFromDependencies(this);
+		this[$dependencies]?.unsubscribe?.();
 
 		this[$subscribers].complete();
 
@@ -125,7 +124,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		if (ref[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(ref))
 			return;
 
-		ComputedRef.unsubscribeFromDependencies(ref);
+		ref[$dependencies]?.unsubscribe?.();
 
 		pushTrackingContext(ref[$observer]);
 		const computedValue = ComputedRef.tryGet(ref);
@@ -174,19 +173,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			if (dep.isOutdated) return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Unsubscribes from all dependencies for the computed ref.
-	 * @remarks
-	 * This is used when the ref is computed to ensure that its list of dependencies
-	 * always reflects the last time it was computed.
-	 * @param ref
-	 */
-	private static unsubscribeFromDependencies(ref: ComputedRef<any>): void {
-		for (const dep of ref[$dependencies]) {
-			dep.subscription.unsubscribe();
-		}
 	}
 
 	/**

@@ -1,13 +1,12 @@
 import { Flags } from "@/common/flags";
 import { $compute, $flags, $dependencies, $observer } from "@/common/symbols";
-import { popTrackingContext, pushTrackingContext } from "@/common/tracking-context";
+import { popTrackingContext, pushTrackingContext, DependencySet } from "@/common/tracking-context";
 import { Observer } from "@/common/types";
-import { Dependency } from "@/common/Dependency";
 import { EffectInstance } from "@/Effect/types";
 
 export class BaseEffect implements EffectInstance {
 	[$flags]: number = 0;
-	[$dependencies]: Array<Dependency> = [];
+	[$dependencies]: DependencySet;
 	[$observer]: Partial<Observer>;
 	[$compute]: () => void;
 
@@ -15,6 +14,7 @@ export class BaseEffect implements EffectInstance {
 
 	constructor(fn: () => void) {
 		this.run = fn;
+		this[$dependencies] = DependencySet.NULL;
 		this[$observer] = {
 			next: BaseEffect.onDependencyChange.bind(BaseEffect, this),
 		};
@@ -40,7 +40,7 @@ export class BaseEffect implements EffectInstance {
 
 		if (!(effect[$flags] & Flags.Enabled)) return;
 
-		BaseEffect.unsubscribeFromDependencies(effect);
+		effect[$dependencies].unsubscribe();
 
 		// Dependencies are created during tracking
 		pushTrackingContext(effect[$observer]);
@@ -53,12 +53,6 @@ export class BaseEffect implements EffectInstance {
 
 		effect[$flags] |= Flags.Queued;
 		queueMicrotask(effect[$compute]);
-	}
-
-	private static unsubscribeFromDependencies(effect: BaseEffect): void {
-		for (const dep of effect[$dependencies]) {
-			dep.subscription.unsubscribe();
-		}
 	}
 
 	private static tryRun(effect: BaseEffect): void {

@@ -12,7 +12,7 @@
         "directory": "packages/reactivity"
     },
     "scripts": {
-        "test": "vitest --typecheck",
+        "test": "vitest run --typecheck",
         "build": "vite build"
     },
     "dependencies": {

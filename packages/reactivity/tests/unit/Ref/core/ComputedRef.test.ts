@@ -2,7 +2,16 @@ import { Dependency } from "@/common/Dependency";
 import { Subscription } from "@/common/Subscription";
 import { Flags } from "@/common/flags";
 import { $dependencies, $flags, $observable, $value } from "@/common/symbols";
+import { DependencySet } from "@/common/tracking-context";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
+
+// Helper function to create DependencySet with mock dependencies
+function createMockDependencySet(dependencies: Dependency[]): DependencySet {
+	const depSet = new DependencySet({});
+	dependencies.forEach((dep, i) => (depSet[i] = dep));
+	(depSet as any).length = dependencies.length;
+	return depSet;
+}
 
 describe("ComputedRef", () => {
 	describe("constructor", () => {
@@ -51,12 +60,12 @@ describe("ComputedRef", () => {
 
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = [
+				ref[$dependencies] = createMockDependencySet([
 					{
 						isOutdated: true,
 						subscription: { unsubscribe: () => {} },
 					} as Dependency,
-				];
+				]);
 
 				const result = ref.get();
 				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
@@ -70,7 +79,7 @@ describe("ComputedRef", () => {
 
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = [{ isOutdated: false } as Dependency];
+				ref[$dependencies] = createMockDependencySet([{ isOutdated: false } as Dependency]);
 
 				const result = ref.get();
 				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
