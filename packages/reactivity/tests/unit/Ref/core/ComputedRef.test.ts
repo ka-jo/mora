@@ -1,7 +1,8 @@
+import { vi } from "vitest";
 import { Dependency } from "@/common/Dependency";
 import { Subscription } from "@/common/Subscription";
 import { Flags } from "@/common/flags";
-import { $dependencies, $flags, $observable, $value } from "@/common/symbols";
+import { $dependencies, $flags, $observable, $value, $compute } from "@/common/symbols";
 import { DependencySet } from "@/common/tracking-context";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 
@@ -11,6 +12,43 @@ function createMockDependencySet(dependencies: Dependency[]): DependencySet {
 	dependencies.forEach((dep, i) => (depSet[i] = dep));
 	(depSet as any).length = dependencies.length;
 	return depSet;
+}
+
+// Helper function to create a mock dependency with proper source
+function createMockDependency(
+	overrides: Partial<{
+		isDirty: boolean;
+		isOutdated: boolean;
+		sourceValue: unknown;
+		snapshotValue: unknown;
+		hasCompute: boolean;
+	}>
+): Dependency {
+	const {
+		isDirty = false,
+		isOutdated = false,
+		sourceValue = 42,
+		snapshotValue = 42,
+		hasCompute = false,
+	} = overrides;
+
+	const mockSource: any = {
+		[$flags]: isDirty ? Flags.Dirty : 0,
+		[$value]: sourceValue,
+	};
+
+	if (hasCompute) {
+		mockSource[$compute] = vi.fn();
+	}
+
+	const mockSubscription = { unsubscribe: vi.fn() };
+
+	// Create a real dependency but override its value property
+	const dep = new Dependency(mockSource, mockSubscription as any);
+	// Override the private value to simulate the snapshot
+	(dep as any).value = snapshotValue;
+
+	return dep;
 }
 
 describe("ComputedRef", () => {
@@ -61,10 +99,11 @@ describe("ComputedRef", () => {
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
 				ref[$dependencies] = createMockDependencySet([
-					{
+					createMockDependency({
 						isOutdated: true,
-						subscription: { unsubscribe: () => {} },
-					} as Dependency,
+						sourceValue: 100,
+						snapshotValue: 50, // Different values to make it outdated
+					}),
 				]);
 
 				const result = ref.get();
@@ -79,7 +118,13 @@ describe("ComputedRef", () => {
 
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = createMockDependencySet([{ isOutdated: false } as Dependency]);
+				ref[$dependencies] = createMockDependencySet([
+					createMockDependency({
+						isOutdated: false,
+						sourceValue: 50,
+						snapshotValue: 50, // Same values to make it not outdated
+					}),
+				]);
 
 				const result = ref.get();
 				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
@@ -300,9 +345,9 @@ describe("ComputedRef", () => {
 		it("should handle already-aborted signals", () => {
 			const controller = new AbortController();
 			controller.abort(); // Abort before creating ref
-			
+
 			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
-			
+
 			// Ref should be immediately aborted
 			expect(ref[$flags] & Flags.Aborted).toBe(Flags.Aborted);
 		});
@@ -310,11 +355,11 @@ describe("ComputedRef", () => {
 		it("should not notify subscribers when created with already-aborted signal", () => {
 			const controller = new AbortController();
 			controller.abort(); // Abort before creating ref
-			
-			const ref = new ComputedRef({ 
+
+			const ref = new ComputedRef({
 				get: () => 0,
 				set: () => {},
-				signal: controller.signal 
+				signal: controller.signal,
 			});
 			const nextCallback = vi.fn();
 			ref.subscribe(nextCallback);
@@ -327,7 +372,7 @@ describe("ComputedRef", () => {
 		it("should complete observers immediately when created with already-aborted signal", () => {
 			const controller = new AbortController();
 			controller.abort(); // Abort before creating ref
-			
+
 			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
 			const completeCallback = vi.fn();
 			ref.subscribe({ complete: completeCallback });
@@ -339,7 +384,7 @@ describe("ComputedRef", () => {
 		it("should have closed subscriptions when created with already-aborted signal", () => {
 			const controller = new AbortController();
 			controller.abort(); // Abort before creating ref
-			
+
 			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
 			const subscription = ref.subscribe(() => {});
 

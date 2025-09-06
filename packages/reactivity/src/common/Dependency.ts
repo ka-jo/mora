@@ -13,19 +13,11 @@ import { Flags } from "@/common/flags";
 export class Dependency {
 	public readonly source: Observable;
 	public readonly subscription: Subscription;
-	private readonly value: unknown;
+	public readonly value: unknown;
 
 	public constructor(source: Observable, subscription: Subscription) {
 		this.source = source;
 		this.subscription = subscription;
 		this.value = source[$value];
-	}
-
-	get isDirty(): boolean {
-		return (this.source[$flags] & Flags.Dirty) === Flags.Dirty;
-	}
-
-	get isOutdated(): boolean {
-		return !Object.is(this.source[$value], this.value);
 	}
 }

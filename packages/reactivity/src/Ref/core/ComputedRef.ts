@@ -174,9 +174,11 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	 */
 	private static hasOutdatedDependenciesAfterCompute(ref: ComputedRef): boolean {
 		for (const dep of ref[$dependencies]) {
-			if (dep.isDirty && dep.source[$compute]) dep.source[$compute]();
+			// If dependency is dirty, recompute it first (only computable observables can be dirty)
+			if (dep.source[$flags] & Flags.Dirty) dep.source[$compute]!();
 
-			if (dep.isOutdated) return true;
+			// Check if observable value has changed since this dependency was created
+			if (!Object.is(dep.source[$value], dep.value)) return true;
 		}
 		return false;
 	}
