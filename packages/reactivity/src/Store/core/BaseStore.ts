@@ -2,8 +2,7 @@ import { $flags, $store, $subscribers, $value } from "@/common/symbols";
 import { track } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
-import { SubscriptionList } from "@/common/SubscriptionList";
-import { createObserver, getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
+import { getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
 import type { Store } from "@/Store/Store";
 import type { Ref, WritableComputedRefOptions } from "@/Ref";
 import { isRef } from "@/Ref/isRef";
@@ -36,7 +35,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 {
 	declare [$flags]: number;
 	declare [$value]: T;
-	declare [$subscribers]: SubscriptionList;
+	declare [$subscribers]: Subscription | null;
 	declare [$store]: BaseStore<T>;
 
 	declare proxy: Store<T>;
@@ -47,7 +46,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 	private constructor(object: T) {
 		this[$flags] = 0;
 		this[$value] = object;
-		this[$subscribers] = new SubscriptionList();
+		this[$subscribers] = null;
 		this[$store] = this;
 		Object.defineProperty(object, $store, {
 			value: this,
@@ -64,7 +63,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return this[$subscribers].initSubscription(this, onNextOrObserver, onError, onComplete);
+		return Subscription.init(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[Symbol.observable](): Observable<T> {

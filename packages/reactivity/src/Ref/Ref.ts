@@ -4,7 +4,6 @@ import { isRef } from "@/Ref/isRef";
 import { computed } from "@/Ref/computed";
 import type { Observable, Observer } from "@/common/types";
 import type { Subscription } from "@/common/Subscription";
-import type { SubscriptionList } from "@/common/SubscriptionList";
 import { $flags, $subscribers, $ref } from "@/common/symbols";
 
 /**
@@ -43,12 +42,11 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	[$flags]: number;
 
 	/**
-	 * The set of all current subscribers to the ref. This property is mutated
-	 * directly by {@link Subscription} to manage the subscription lifecycle.
+	 * The head of the intrinsic linked list containing the subscribers for this ref
 	 *
 	 * @internal
 	 */
-	[$subscribers]: SubscriptionList;
+	[$subscribers]: Subscription | null;
 
 	/**
 	 * The ref symbol is used internally to identify ref instances. It is not intended

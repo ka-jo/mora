@@ -18,7 +18,6 @@ import {
 } from "@/common/tracking-context";
 import type { Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
-import { SubscriptionList } from "@/common/SubscriptionList";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 
@@ -29,7 +28,7 @@ const INITIAL_VALUE: any = $value;
  * @internal
  */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
-	declare [$subscribers]: SubscriptionList;
+	declare [$subscribers]: Subscription | null;
 	declare [$dependencies]: DependencySet;
 	declare [$flags]: number;
 	declare [$value]: TGet;
@@ -39,7 +38,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	declare [$compute]: () => void;
 
 	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
-		this[$subscribers] = new SubscriptionList();
+		this[$subscribers] = null;
 		this[$dependencies] = DependencySet.NULL;
 		this[$flags] = Flags.Dirty;
 		this[$value] = INITIAL_VALUE;
@@ -95,7 +94,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 				// Only calls to `get` should throw, so we swallow the error here.
 			}
 
-		return this[$subscribers].initSubscription(this, onNextOrObserver, onError, onComplete);
+		return Subscription.init(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[$observable]() {
@@ -105,7 +104,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	abort(): void {
 		this[$dependencies]?.unsubscribe?.();
 
-		this[$subscribers].complete();
+		Subscription.completeAll(this[$subscribers]);
 
 		this[$flags] |= Flags.Aborted;
 		this[$dependencies] = null as any;
@@ -132,7 +131,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 		if (!Object.is(computedValue, ref[$value])) {
 			ref[$value] = computedValue;
-			ref[$subscribers].next(computedValue);
+			Subscription.notifyAll(ref[$subscribers], computedValue);
 		}
 	}
 
@@ -144,9 +143,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	private static onDependencyChange(ref: ComputedRef<any>) {
 		ref[$flags] |= Flags.Dirty;
 		// If the ref is already queued or has no active susbscribers, we don't need to queue it
-		if (ref[$flags] & Flags.Queued || ref[$subscribers].head === null) return;
+		if (ref[$flags] & Flags.Queued || ref[$subscribers] === null) return;
 
-		ref[$subscribers].dirty();
+		Subscription.dirtyAll(ref[$subscribers]);
 
 		ref[$flags] |= Flags.Queued;
 		queueMicrotask(ref[$compute]);
@@ -191,7 +190,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 			if (e instanceof Error === false) e = new Error(String(e));
 
-			ref[$subscribers].error(e as Error);
+			Subscription.errorAll(ref[$subscribers], e as Error);
 
 			throw e;
 		}

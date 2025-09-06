@@ -12,7 +12,6 @@ import { createObserver, isObject } from "@/common/util";
 import { Flags } from "@/common/flags";
 import { track } from "@/common/tracking-context";
 import { Subscription } from "@/common/Subscription";
-import { SubscriptionList } from "@/common/SubscriptionList";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import { isRef } from "@/Ref/isRef";
@@ -24,7 +23,7 @@ const $forwardObserver = Symbol("forward-observer");
  * @internal
  */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	declare [$subscribers]: SubscriptionList;
+	declare [$subscribers]: Subscription | null;
 	declare [$flags]: number;
 	declare [$value]: T;
 	declare [$ref]: BaseRef<T>;
@@ -33,7 +32,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	declare [$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
-		this[$subscribers] = new SubscriptionList();
+		this[$subscribers] = null;
 		this[$flags] = 0;
 		this[$ref] = this;
 		this[$options] = options;
@@ -64,7 +63,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		if (this[$flags] & Flags.Aborted) return true;
 
-		this[$subscribers].next(value);
+		Subscription.notifyAll(this[$subscribers], value);
 
 		return true;
 	}
@@ -74,7 +73,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return this[$subscribers].initSubscription(this, onNextOrObserver, onError, onComplete);
+		return Subscription.init(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[$observable](): Ref<T, T> {
@@ -84,7 +83,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	abort(): void {
 		this[$dependencies]?.unsubscribe();
 
-		this[$subscribers].complete();
+		Subscription.completeAll(this[$subscribers]);
 
 		this[$flags] |= Flags.Aborted;
 		if (this[$options]?.signal) {
@@ -139,6 +138,6 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		if (target[$flags] & Flags.Aborted) return;
 
-		target[$subscribers].next(value);
+		Subscription.notifyAll(target[$subscribers], value);
 	}
 }

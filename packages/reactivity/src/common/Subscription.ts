@@ -1,7 +1,7 @@
 import type { Observable, Observer } from "@/common/types";
 import { $flags, $next, $observable, $observer, $prev, $subscribers } from "@/common/symbols";
 import { Flags } from "@/common/flags";
-import { NO_OP } from "@/common/util";
+import { createObserver, NO_OP } from "@/common/util";
 
 /**
  * A subscription implementation intended to be used to manage subscriptions for any
@@ -84,7 +84,7 @@ export class Subscription {
 			this[$prev][$next] = this[$next];
 		} else {
 			// We're the head, update the list's head
-			this[$observable][$subscribers].head = this[$next];
+			this[$observable][$subscribers] = this[$next];
 		}
 
 		if (this[$next]) {
@@ -109,9 +109,15 @@ export class Subscription {
 	enable(): void {
 		if (this[$flags] & (Flags.Enabled | Flags.Aborted)) return;
 
-		// Set enabled flag and add back to notification list
 		this[$flags] |= Flags.Enabled;
-		this[$observable][$subscribers].add(this);
+
+		const currentHead = this[$observable][$subscribers];
+		if (currentHead) {
+			this[$next] = currentHead;
+			currentHead[$prev] = this;
+		}
+
+		this[$observable][$subscribers] = this;
 	}
 
 	/**
@@ -139,7 +145,7 @@ export class Subscription {
 			this[$prev][$next] = this[$next];
 		} else {
 			// We're the head, update the list's head
-			this[$observable][$subscribers].head = this[$next];
+			this[$observable][$subscribers] = this[$next];
 		}
 
 		if (this[$next]) {
@@ -169,14 +175,26 @@ export class Subscription {
 	 * @param observer - The observer to receive notifications
 	 * @returns A new subscription, or a closed subscription if the observable is aborted
 	 */
-	static init(observable: Observable, observer: Observer): Subscription {
+	static init(
+		observable: Observable,
+		onNextOrObserver: Partial<Observer> | Observer["next"],
+		onError?: Observer["error"],
+		onComplete?: Observer["complete"]
+	): Subscription {
+		const observer = createObserver(onNextOrObserver, onError, onComplete);
 		if (observable[$flags] & Flags.Aborted) {
 			observer.complete();
 			return Subscription.CLOSED_SUBSCRIPTION;
 		}
 		const subscription = new Subscription(observable, observer);
-		observable[$subscribers].add(subscription);
-		return subscription;
+
+		const currentHead = observable[$subscribers];
+		if (currentHead) {
+			subscription[$next] = currentHead;
+			currentHead[$prev] = subscription;
+		}
+
+		return (observable[$subscribers] = subscription);
 	}
 
 	/**
@@ -195,5 +213,65 @@ export class Subscription {
 		subscription[$observer] = null as any;
 		subscription[$prev] = null;
 		subscription[$next] = null;
+	}
+
+	/**
+	 * Notifies all subscriptions in a linked list with a new value.
+	 *
+	 * @internal
+	 * This static method provides efficient broadcasting by iterating directly
+	 * through the subscription linked list without the overhead of an intermediate
+	 * SubscriptionList object.
+	 *
+	 * @param subscription - The head of the subscription linked list
+	 * @param value - The value to broadcast to all subscribers
+	 */
+	static notifyAll<T>(subscription: Subscription | null, value: T): void {
+		while (subscription) {
+			subscription[$observer].next(value);
+			subscription = subscription[$next];
+		}
+	}
+
+	/**
+	 * Notifies all subscriptions in a linked list of an error.
+	 *
+	 * @internal
+	 * @param subscription - The head of the subscription linked list
+	 * @param error - The error to broadcast to all subscribers
+	 */
+	static errorAll(subscription: Subscription | null, error: Error): void {
+		while (subscription) {
+			subscription[$observer].error(error);
+			subscription = subscription[$next];
+		}
+	}
+
+	/**
+	 * Notifies all subscriptions that the observable is complete and cleans them up.
+	 *
+	 * @internal
+	 * @param subscription - The head of the subscription linked list
+	 */
+	static completeAll(subscription: Subscription | null): void {
+		while (subscription) {
+			subscription[$observer].complete();
+			const next = subscription[$next];
+			Subscription.cleanup(subscription);
+			subscription = next;
+		}
+	}
+
+	/**
+	 * Notifies all subscriptions that their dependencies are dirty.
+	 *
+	 * @internal
+	 * @param subscription - The head of the subscription linked list
+	 */
+	static dirtyAll(subscription: Subscription | null): void {
+		while (subscription) {
+			subscription[$observer].dirty();
+			subscription = subscription[$next];
+		}
 	}
 }

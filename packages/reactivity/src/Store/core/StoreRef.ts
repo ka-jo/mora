@@ -2,18 +2,17 @@ import { $flags, $ref, $subscribers, $value } from "@/common/symbols";
 import { Observer } from "@/common/types";
 import { createObserver } from "@/common/util";
 import { Subscription } from "@/common/Subscription";
-import { SubscriptionList } from "@/common/SubscriptionList";
 import { Ref } from "@/Ref";
 
 export class StoreRef<T = unknown> implements Ref<T, T> {
 	declare [$value]: T;
 	declare [$flags]: number;
-	declare [$subscribers]: SubscriptionList;
+	declare [$subscribers]: Subscription | null;
 	declare [$ref]: Ref<T, T>;
 
 	constructor(value: T) {
 		this[$flags] = 0;
-		this[$subscribers] = new SubscriptionList();
+		this[$subscribers] = null;
 		this[$ref] = this;
 	}
 
@@ -30,9 +29,7 @@ export class StoreRef<T = unknown> implements Ref<T, T> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		const observer = createObserver(onNextOrObserver, onError, onComplete);
-
-		return Subscription.init(this, observer);
+		return Subscription.init(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[Symbol.observable](): Ref<T, T> {
