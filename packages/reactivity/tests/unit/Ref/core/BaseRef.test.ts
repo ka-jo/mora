@@ -1,4 +1,5 @@
-import { $observable, $value } from "@/common/symbols";
+import { $observable, $value, $flags } from "@/common/symbols";
+import { Flags } from "@/common/flags";
 import { Subscription } from "@/common/Subscription";
 import { BaseRef } from "@/Ref/core/BaseRef";
 
@@ -245,6 +246,52 @@ describe("BaseRef", () => {
 
 			controller.abort();
 
+			expect(subscription.enabled).toBe(false);
+		});
+
+		it("should handle already-aborted signals", () => {
+			const controller = new AbortController();
+			controller.abort(); // Abort before creating ref
+
+			const ref = new BaseRef(0, { signal: controller.signal });
+
+			// Ref should be immediately aborted
+			expect(ref[$flags] & Flags.Aborted).toBe(Flags.Aborted);
+		});
+
+		it("should not notify subscribers when created with already-aborted signal", () => {
+			const controller = new AbortController();
+			controller.abort(); // Abort before creating ref
+
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const nextCallback = vi.fn();
+			ref.subscribe(nextCallback);
+
+			ref.set(1);
+
+			expect(nextCallback).not.toHaveBeenCalled();
+		});
+
+		it("should complete observers immediately when created with already-aborted signal", () => {
+			const controller = new AbortController();
+			controller.abort(); // Abort before creating ref
+
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const completeCallback = vi.fn();
+			ref.subscribe({ complete: completeCallback });
+
+			// Complete should have been called during subscription setup
+			expect(completeCallback).toHaveBeenCalled();
+		});
+
+		it("should have closed subscriptions when created with already-aborted signal", () => {
+			const controller = new AbortController();
+			controller.abort(); // Abort before creating ref
+
+			const ref = new BaseRef(0, { signal: controller.signal });
+			const subscription = ref.subscribe(() => {});
+
+			expect(subscription.closed).toBe(true);
 			expect(subscription.enabled).toBe(false);
 		});
 	});

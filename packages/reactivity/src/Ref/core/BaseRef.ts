@@ -10,7 +10,7 @@ import {
 } from "@/common/symbols";
 import { createObserver, isObject } from "@/common/util";
 import { Flags } from "@/common/flags";
-import { track } from "@/common/tracking-context";
+import { currentContext } from "@/common/tracking-context";
 import { Subscription } from "@/common/Subscription";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
@@ -40,14 +40,18 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		BaseRef.initValue(this, value);
 
 		if (options?.signal) {
-			this.abort = this.abort.bind(this);
-			options.signal.addEventListener("abort", this.abort);
+			if (options.signal.aborted) {
+				this[$flags] |= Flags.Aborted;
+			} else {
+				this.abort = this.abort.bind(this);
+				options.signal.addEventListener("abort", this.abort);
+			}
 		}
 	}
 
 	get(): T {
-		if (!(this[$flags] & Flags.Aborted)) {
-			track(this, $value);
+		if (!(this[$flags] & Flags.Aborted) && currentContext) {
+			currentContext.track(this, $value);
 		}
 		return this[$value];
 	}

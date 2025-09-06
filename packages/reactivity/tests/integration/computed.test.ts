@@ -1,5 +1,6 @@
+// import { ReadonlyRef, Ref } from "@mora-js/reactivity";
+import { ReadonlyRef, Ref } from "@/index";
 import { flushMicrotasks } from "../fixtures/util";
-import { ReadonlyRef, Ref } from "@mora-js/reactivity";
 
 test("computed with one dependency", () => {
 	const count = Ref(1);
@@ -191,7 +192,6 @@ describe("error handling", () => {
 
 		expect(() => {
 			errorComputed.get();
-			// This is sneaky testing that subscribe won't trigger onError as well
 			expect(onError).toHaveBeenCalledTimes(1);
 		}).toThrow();
 	});

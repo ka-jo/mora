@@ -1,5 +1,5 @@
 import { $flags, $store, $subscribers, $value } from "@/common/symbols";
-import { track } from "@/common/tracking-context";
+import { currentContext } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import { getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
@@ -71,14 +71,12 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 	}
 
 	get(target: T, prop: PropertyKey, receiver: T) {
-		const isTrackingContext = track(this, prop);
-
 		if (this.refs[prop]) return this.refs[prop].get();
 
 		if (isSymbol(prop)) return target[prop];
 
 		// If it's a tracking context, we need to ensure that the property ref is initialized
-		if (isTrackingContext) return BaseStore.initPropertyRef(this, prop).get();
+		if (currentContext) return BaseStore.initPropertyRef(this, prop).get();
 
 		const targetValue = target[prop];
 		if (isRef(targetValue)) {

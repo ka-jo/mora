@@ -4,39 +4,24 @@ import { $value } from "@/common/symbols";
 import { NO_OP } from "@/common/util";
 
 const CONTEXT_STACK = new Array<DependencySet>();
-let _currentContext: DependencySet | undefined = undefined;
+
+/**
+ * The current tracking context. When not undefined, reactive accesses should be tracked.
+ * Direct access to this avoids function call overhead compared to using track().
+ */
+export let currentContext: DependencySet | undefined = undefined;
 
 export function pushTrackingContext(observer: Partial<Observer>): DependencySet {
 	const context = new DependencySet(observer);
 	CONTEXT_STACK.push(context);
-	return (_currentContext = context);
+	currentContext = context;
+	return context;
 }
 
 export function popTrackingContext(): DependencySet | undefined {
 	const context = CONTEXT_STACK.pop();
-	_currentContext = CONTEXT_STACK[CONTEXT_STACK.length - 1];
+	currentContext = CONTEXT_STACK[CONTEXT_STACK.length - 1];
 	return context;
-}
-
-export function isTrackingContext(): boolean {
-	return _currentContext !== undefined;
-}
-
-/**
- * Tracks the access of an observable property. If there is an active tracking context and the property
- * is $value, it will immediately create a subscription and store the dependency.
- *
- * @param source - The observable that was accessed
- * @param property - The property that was accessed
- * @returns true if there is an active tracking context, false otherwise
- */
-export function track(source: Observable, property: PropertyKey): boolean {
-	if (_currentContext && property === $value) {
-		_currentContext.track(source, property);
-		return true;
-	}
-
-	return false;
 }
 
 /**

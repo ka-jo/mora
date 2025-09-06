@@ -13,7 +13,7 @@ import {
 import {
 	popTrackingContext,
 	pushTrackingContext,
-	track,
+	currentContext,
 	DependencySet,
 } from "@/common/tracking-context";
 import type { Observer } from "@/common/types";
@@ -48,8 +48,12 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
 
 		if (options.signal) {
-			this.abort = this.abort.bind(this);
-			options.signal.addEventListener("abort", this.abort);
+			if (options.signal.aborted) {
+				this[$flags] |= Flags.Aborted;
+			} else {
+				this.abort = this.abort.bind(this);
+				options.signal.addEventListener("abort", this.abort);
+			}
 		}
 	}
 
@@ -58,7 +62,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			return this[$value] as TGet;
 		}
 
-		track(this, $value);
+		if (currentContext) {
+			currentContext.track(this, $value);
+		}
 
 		if (this[$flags] & Flags.Dirty) {
 			ComputedRef.compute(this);
@@ -102,7 +108,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	}
 
 	abort(): void {
-		this[$dependencies]?.unsubscribe?.();
+		this[$dependencies].unsubscribe();
 
 		Subscription.completeAll(this[$subscribers]);
 
@@ -123,7 +129,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		if (ref[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(ref))
 			return;
 
-		ref[$dependencies]?.unsubscribe?.();
+		ref[$dependencies].unsubscribe();
 
 		pushTrackingContext(ref[$observer]);
 		const computedValue = ComputedRef.tryGet(ref);
@@ -145,9 +151,10 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		// If the ref is already queued or has no active susbscribers, we don't need to queue it
 		if (ref[$flags] & Flags.Queued || ref[$subscribers] === null) return;
 
+		ref[$flags] |= Flags.Queued;
+
 		Subscription.dirtyAll(ref[$subscribers]);
 
-		ref[$flags] |= Flags.Queued;
 		queueMicrotask(ref[$compute]);
 	}
 
@@ -176,7 +183,8 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 	/**
 	 * Attempts to get the value of a ref, catching any errors that may occur. If an error occurs,
-	 * it notifies all subscribers of the error.
+	 * it notifies all subscribers of the error, ensures the ref is still marked dirty, and pops
+	 * the tracking context.
 	 * @typeParam T
 	 * @param ref
 	 * @returns T
@@ -191,6 +199,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			if (e instanceof Error === false) e = new Error(String(e));
 
 			Subscription.errorAll(ref[$subscribers], e as Error);
+
+			// Ensure the tracking context is popped if an error occurs during computation
+			popTrackingContext();
 
 			throw e;
 		}
