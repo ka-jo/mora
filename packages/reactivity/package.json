@@ -13,6 +13,8 @@
     },
     "scripts": {
         "test": "vitest run --typecheck",
+        "test:source": "MORA_TEST_TARGET=source vitest run --typecheck",
+        "test:dist": "MORA_TEST_TARGET=dist vitest run --typecheck",
         "build": "vite build"
     },
     "dependencies": {
