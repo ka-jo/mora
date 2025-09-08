@@ -12,3 +12,15 @@ export const $observer: unique symbol = Symbol("observer");
 export const $store: unique symbol = Symbol("store");
 export const $prev: unique symbol = Symbol("prev");
 export const $next: unique symbol = Symbol("next");
+
+/**
+ * Internal link to a scope's parent. Not part of the public API.
+ * Used for lifecycle propagation and ownership checks.
+ */
+export const $parent: unique symbol = Symbol("parent");
+
+/**
+ * Internal list of a scope's immediate children. Not part of the public API.
+ * Children are disposed before their parent and cannot be added after dispose.
+ */
+export const $children: unique symbol = Symbol("children");
