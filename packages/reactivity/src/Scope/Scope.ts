@@ -1,5 +1,6 @@
 import type { ScopeOptions, ScopeConstructor } from "@/Scope/types";
-import { $children, $flags, $parent } from "@/common/symbols";
+import { $children, $flags, $parent, $dependencies } from "@/common/symbols";
+import type { Dependency } from "@/common/Dependency";
 import { Observable } from "@/common/types";
 
 export interface Scope {
@@ -16,13 +17,24 @@ export interface Scope {
 	/**
 	 * Internal flags bitfield used across Mora primitives (e.g., Aborted).
 	 * Included here solely to brand implementors and enable internal checks.
-	 *
 	 * @internal
 	 */
 	readonly [$flags]: number;
 
+	/**
+	 * Internal array of {@link dependencies Dependency} collected by this scope.
+	 * @internal
+	 */
+	readonly [$dependencies]: Array<Dependency>;
+
 	/** Dispose this scope and all of its descendants. Idempotent. Also an Observable<void>. */
 	dispose: (() => void) & Observable<void>;
+
+	/**
+	 * Observe an observable value within the scope's current collection window. No-op if
+	 * the scope isn't actively collecting dependencies.
+	 */
+	observe(observable: Observable): void;
 }
 
 /**
