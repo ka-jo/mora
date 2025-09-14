@@ -2,13 +2,14 @@ import type { ScopeOptions, ScopeConstructor } from "@/Scope/types";
 import { $children, $flags, $parent, $dependencies } from "@/common/symbols";
 import type { Dependency } from "@/common/Dependency";
 import { Observable } from "@/common/types";
+import { BaseScope } from "./core/BaseScope";
 
 export interface Scope {
 	/**
-	 * Internal link to the parent scope, or null if detached.
+	 * Internal link to the parent scope, or undefined if detached.
 	 * @internal
 	 */
-	readonly [$parent]: Scope | null;
+	readonly [$parent]: Scope | undefined;
 	/**
 	 * Internal list of immediate child scopes.
 	 * @internal
@@ -43,6 +44,6 @@ export interface Scope {
 export const Scope: ScopeConstructor = Object.defineProperties(function Scope(
 	options?: ScopeOptions
 ) {
-	throw new Error("Scope not implemented yet");
+	return new BaseScope(options);
 },
 {});
