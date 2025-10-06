@@ -5,7 +5,9 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:source": "pnpm -r test:source",
-    "test:dist": "pnpm -r test:dist"
+    "test:dist": "pnpm -r test:dist",
+    "bench": "pnpm --filter @mora-js/reactivity bench",
+    "bench:watch": "pnpm --filter @mora-js/reactivity bench:watch"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
