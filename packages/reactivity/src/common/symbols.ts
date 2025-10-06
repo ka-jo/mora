@@ -6,6 +6,7 @@ export const $subscribers: unique symbol = Symbol("subscribers");
 export const $flags: unique symbol = Symbol("flags");
 export const $ref: unique symbol = Symbol("ref");
 export const $options: unique symbol = Symbol("options");
+// TODO: could this be called "subscriptions" instead? Rename DependencyMap to SubscriptionMap?
 export const $dependencies: unique symbol = Symbol("dependencies");
 export const $compute: unique symbol = Symbol("compute");
 export const $observer: unique symbol = Symbol("observer");
@@ -24,3 +25,8 @@ export const $parent: unique symbol = Symbol("parent");
  * Children are disposed before their parent and cannot be added after dispose.
  */
 export const $children: unique symbol = Symbol("children");
+
+/**
+ * Internal index of a child scope within its parent's children. Not part of the public API.
+ */
+export const $index: unique symbol = Symbol("index");

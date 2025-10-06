@@ -3,6 +3,13 @@ import { $observer } from "@/common/symbols";
 
 export const NO_OP = function noop() {};
 
+export const EMPTY_ITERATOR: IterableIterator<any> = {
+	next: () => ({ value: undefined, done: true }),
+	[Symbol.iterator]() {
+		return this;
+	},
+};
+
 export function createObserver<T>(
 	onNextOrObserver: Observer<T>["next"] | Partial<Observer<T>>,
 	onError?: Observer<T>["error"],

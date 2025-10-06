@@ -1,37 +1,50 @@
-import { Observer, Observable } from "@/common/types";
-import {
-	$children,
-	$flags,
-	$parent,
-	$dependencies,
-	$subscribers,
-	$observable,
-	$value,
-} from "@/common/symbols";
-import { Flags } from "@/common/flags";
-import { Subscription } from "@/common/Subscription";
-import { Dependency } from "@/common/Dependency";
-import { createObserver } from "@/common/util";
+import { InteropObservable } from "@/common/types";
+import { $children, $dependencies, $parent } from "@/common/symbols";
 import type { ScopeOptions } from "@/Scope/types";
 import type { Scope } from "@/Scope/Scope";
-import { currentScope } from "@/common/current-scope";
+import { EMPTY_ITERATOR } from "@/common/util";
 
 /**
  * @internal
  */
 export class BaseScope implements Scope {
-	declare [$parent]: Scope | undefined;
-	declare [$children]: Scope[];
-	declare [$flags]: number;
-	declare [$dependencies]: Dependency[];
-	declare [$subscribers]: Subscription | null;
-	declare [$value]: void;
+	declare [$parent]: Scope | null;
+	declare [$children]: Scope[] | null;
+	declare [$dependencies]: Set<InteropObservable> | null;
 
-	declare dispose: (() => void) & Observable<void>;
+	constructor(options?: ScopeOptions) {
+		this[$parent] = options?.parent ?? null;
+		this[$children] = [];
+	}
 
-	constructor(options?: ScopeOptions) {}
+	observables(): IterableIterator<InteropObservable> {
+		return EMPTY_ITERATOR;
+	}
 
-	observe(observable: Observable): void {}
+	scopes(): IterableIterator<Scope> {
+		return this[$children]?.[Symbol.iterator]() ?? EMPTY_ITERATOR;
+	}
 
-	private static dispose(scope: BaseScope): void {}
+	observe(observable: InteropObservable): void {}
+
+	dispose(): void {
+		if (this[$children] === null) return; // Already disposed
+
+		const children = this[$children];
+		this[$children] = null;
+		for (const child of children) {
+			child.dispose();
+		}
+
+		const parentChildren = this[$parent]?.[$children];
+		this[$parent] = null;
+		if (parentChildren) {
+			const index = parentChildren.indexOf(this);
+			if (index !== -1) {
+				// Move last element to index position, then pop
+				parentChildren[index] = parentChildren[parentChildren.length - 1];
+				parentChildren.length--;
+			}
+		}
+	}
 }
