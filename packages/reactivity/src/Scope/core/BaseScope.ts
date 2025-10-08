@@ -1,49 +1,68 @@
-import { InteropObservable } from "@/common/types";
-import { $children, $dependencies, $parent } from "@/common/symbols";
+import { Observable } from "@/common/types";
+import { $children, $dependencies, $index, $parent } from "@/common/symbols";
 import type { ScopeOptions } from "@/Scope/types";
 import type { Scope } from "@/Scope/Scope";
-import { EMPTY_ITERATOR } from "@/common/util";
 
 /**
  * @internal
  */
 export class BaseScope implements Scope {
 	declare [$parent]: Scope | null;
+	declare [$index]: number;
 	declare [$children]: Scope[] | null;
-	declare [$dependencies]: Set<InteropObservable> | null;
+	declare [$dependencies]: Set<Observable> | null;
 
 	constructor(options?: ScopeOptions) {
-		this[$parent] = options?.parent ?? null;
+		if (options?.parent) {
+			const parentChildren = options.parent[$children];
+			if (parentChildren === null) {
+				throw new Error("Cannot add scope to disposed parent");
+			}
+			this[$parent] = options.parent;
+			this[$index] = parentChildren.length;
+			parentChildren.push(this);
+		} else {
+			this[$parent] = null;
+		}
 		this[$children] = [];
+		this[$dependencies] = new Set();
 	}
 
-	observables(): IterableIterator<InteropObservable> {
-		return EMPTY_ITERATOR;
+	*observables(): IterableIterator<Observable> {
+		if (this[$dependencies]) yield* this[$dependencies];
 	}
 
-	scopes(): IterableIterator<Scope> {
-		return this[$children]?.[Symbol.iterator]() ?? EMPTY_ITERATOR;
+	*scopes(): IterableIterator<Scope> {
+		if (this[$children]) yield* this[$children];
 	}
 
-	observe(observable: InteropObservable): void {}
+	observe(observable: Observable): void {
+		if (this[$children] === null) return; // Already disposed
+
+		this[$dependencies]!.add(observable);
+	}
 
 	dispose(): void {
 		if (this[$children] === null) return; // Already disposed
 
 		const children = this[$children];
-		this[$children] = null;
+		this[$dependencies] = null;
+		this[$children] = null; // Mark as disposed
+
 		for (const child of children) {
 			child.dispose();
 		}
 
-		const parentChildren = this[$parent]?.[$children];
+		const parent = this[$parent];
 		this[$parent] = null;
-		if (parentChildren) {
-			const index = parentChildren.indexOf(this);
-			if (index !== -1) {
-				// Move last element to index position, then pop
-				parentChildren[index] = parentChildren[parentChildren.length - 1];
-				parentChildren.length--;
+		if (parent) {
+			const parentChildren = parent[$children];
+			if (parentChildren) {
+				const index = this[$index];
+				const lastChild = parentChildren[parentChildren.length - 1];
+				parentChildren[index] = lastChild;
+				lastChild[$index] = index;
+				parentChildren.pop();
 			}
 		}
 	}

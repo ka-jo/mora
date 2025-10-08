@@ -29,14 +29,17 @@ describe("Scope constructor", () => {
 describe("Scope type", () => {
 	const scope: ScopeType = null as any;
 
-	describe("dispose property", () => {
-		it("should be callable with no args and return void", () => {
-			expectTypeOf(scope.dispose).toBeCallableWith();
-			expectTypeOf(scope.dispose()).toEqualTypeOf<void>();
+	describe("dispose method", () => {
+		it("should be a function", () => {
+			expectTypeOf(scope.dispose).toBeFunction();
 		});
 
-		it("should extend Observable<void>", () => {
-			expectTypeOf(scope.dispose).toExtend<Observable<void>>();
+		it("should return void", () => {
+			expectTypeOf(scope.dispose).returns.toEqualTypeOf<void>();
+		});
+
+		it("should be callable with no args", () => {
+			expectTypeOf(scope.dispose).toBeCallableWith();
 		});
 	});
 

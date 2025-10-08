@@ -11,6 +11,6 @@
         "emitDeclarationOnly": true,
         "types": ["vitest/globals", "node"],
     },
-    "include": ["src/**/*.ts", "tests/**/*.ts"],
+    "include": ["src/**/*.ts", "tests/**/*.ts", "benchmarks/**/*.ts"],
     "exclude": ["node_modules"]
 }
