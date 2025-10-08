@@ -5,5 +5,5 @@ import type { Ref } from "@/Ref/Ref";
 export const isRef: RefConstructor["isRef"] = function isRef<T>(
 	value: Ref<T> | any
 ): value is Ref<T> {
-	return value && value[$ref] === value;
+	return typeof value === "object" && value !== null && value[$ref] === value;
 };

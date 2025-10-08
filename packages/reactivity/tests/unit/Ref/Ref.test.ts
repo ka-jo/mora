@@ -1,8 +1,5 @@
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 import { Ref } from "@/Ref";
-import { Observable } from "@/common/types";
-import { $observable } from "@/common/symbols";
-import { Subscription } from "@/common/Subscription";
 
 describe("Ref", () => {
 	describe("constructor", () => {
@@ -32,6 +29,14 @@ describe("Ref", () => {
 		it("should return false for non-Ref instance", () => {
 			const notRef = { get: () => {}, set: () => {} };
 			expect(Ref.isRef(notRef)).toBe(false);
+		});
+
+		it("should return false for null", () => {
+			expect(Ref.isRef(null)).toBe(false);
+		});
+
+		it("should return false for undefined", () => {
+			expect(Ref.isRef(undefined)).toBe(false);
 		});
 	});
 

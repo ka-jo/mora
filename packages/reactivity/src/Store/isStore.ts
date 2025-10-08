@@ -6,5 +6,5 @@ export const isStore: StoreConstructor["isStore"] = function isStore<T>(
 	object: T
 ): object is Store<T> {
 	//@ts-expect-error: TypeScript doesn't think T can be indexed with $store
-	return object && object[$store] !== undefined;
+	return typeof object === "object" && object !== null && object[$store] !== undefined;
 };
