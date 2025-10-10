@@ -223,11 +223,11 @@ describe("ComputedRef", () => {
 			expect(subscription).toBeInstanceOf(Subscription);
 		});
 
-		it("should immediately trigger complete if the ref is aborted", () => {
+		it("should immediately trigger complete if the ref is disposed", () => {
 			const ref = new ComputedRef({ get: () => 0 });
 			const completeCallback = vi.fn();
 
-			ref.abort();
+			ref.dispose();
 
 			ref.subscribe({ complete: completeCallback });
 
@@ -243,11 +243,11 @@ describe("ComputedRef", () => {
 		});
 	});
 
-	describe("abort method", () => {
+	describe("dispose method", () => {
 		it("should return void", () => {
 			const ref = new ComputedRef({ get: () => 0 });
 
-			const result = ref.abort();
+			const result = ref.dispose();
 
 			expect(result).toBeUndefined();
 		});
@@ -257,7 +257,7 @@ describe("ComputedRef", () => {
 			const completeCallback = vi.fn();
 			ref.subscribe({ complete: completeCallback });
 
-			ref.abort();
+			ref.dispose();
 
 			expect(completeCallback).toHaveBeenCalled();
 		});
@@ -267,7 +267,7 @@ describe("ComputedRef", () => {
 			const nextCallback = vi.fn();
 			ref.subscribe(nextCallback);
 
-			ref.abort();
+			ref.dispose();
 
 			ref.set(1);
 
@@ -279,7 +279,7 @@ describe("ComputedRef", () => {
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
-			ref.abort();
+			ref.dispose();
 
 			expect(subscription.closed).toBe(true);
 		});
@@ -289,7 +289,7 @@ describe("ComputedRef", () => {
 			const nextCallback = vi.fn();
 			const subscription = ref.subscribe(nextCallback);
 
-			ref.abort();
+			ref.dispose();
 
 			expect(subscription.enabled).toBe(false);
 		});
@@ -348,7 +348,7 @@ describe("ComputedRef", () => {
 
 			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
 
-			// Ref should be immediately aborted
+			// Ref should be immediately disposed
 			expect(ref[$flags] & Flags.Aborted).toBe(Flags.Aborted);
 		});
 

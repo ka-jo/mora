@@ -7,7 +7,7 @@ expect.extend({
 				get: expect.any(Function),
 				set: expect.any(Function),
 				subscribe: expect.any(Function),
-				abort: expect.any(Function),
+				dispose: expect.any(Function),
 				[$ref]: expect.any(Object),
 				[$observable]: expect.any(Function),
 			});

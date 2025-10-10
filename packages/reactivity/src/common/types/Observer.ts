@@ -31,7 +31,7 @@ export interface Observer<T = unknown> {
 	 * Callback to use when the observable is complete.
 	 *
 	 * @privateRemarks
-	 * Aborting Refs will trigger this callback and is currently the only way to complete an
+	 * Disposing Refs will trigger this callback and is currently the only way to complete an
 	 * observable in Mora
 	 */
 	complete(): void;

@@ -43,8 +43,8 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 			if (options.signal.aborted) {
 				this[$flags] |= Flags.Aborted;
 			} else {
-				this.abort = this.abort.bind(this);
-				options.signal.addEventListener("abort", this.abort);
+				this.dispose = this.dispose.bind(this);
+				options.signal.addEventListener("abort", this.dispose);
 			}
 		}
 	}
@@ -84,14 +84,14 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		return this;
 	}
 
-	abort(): void {
+	dispose(): void {
 		this[$dependencies]?.unsubscribe();
 
 		Subscription.completeAll(this[$subscribers]);
 
 		this[$flags] |= Flags.Aborted;
 		if (this[$options]?.signal) {
-			this[$options].signal.removeEventListener("abort", this.abort);
+			this[$options].signal.removeEventListener("abort", this.dispose);
 		}
 	}
 

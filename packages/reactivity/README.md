@@ -34,4 +34,4 @@ This package contains the source code for Mora's reactivity system.
 - Refs and Stores are separate concepts
 - Stores proxy nested refs automatically
 - Effects and Computeds share core infrastructure
-- Refs/Stores can be aborted manually or by abort signals
+- Refs/Stores can be disposed manually or by abort signals

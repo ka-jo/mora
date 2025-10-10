@@ -36,7 +36,7 @@ export class StoreRef<T = unknown> implements Ref<T, T> {
 		return this;
 	}
 
-	abort(): void {
+	dispose(): void {
 		throw new Error("Method not implemented.");
 	}
 }

@@ -58,17 +58,17 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 
 	/**
 	 * This method technically exists on the instance of the ref itself because it makes
-	 * it easier for different Ref implementations to implement their own abort method,
-	 * but I don't think we want aborting to be at the top of a consumer's mind when
+	 * it easier for different Ref implementations to implement their own dispose method,
+	 * but I don't think we want disposing to be at the top of a consumer's mind when
 	 * interacting with a ref, so we marking it as internal to prevent exposing it in the
-	 * public API. Instead, a consumer should use the abort method on the Ref namespace.
+	 * public API. Instead, a consumer should use the dispose method on the Ref namespace.
 	 *
 	 * In the future, we may want to make this a symbol property to make it less visible
 	 * at runtime, but for the time being, we are leaving it as a regular method.
 	 *
 	 * @internal
 	 */
-	abort(): void;
+	dispose(): void;
 
 	/**
 	 * Returns the current value of the ref. Calling this method will register the

@@ -51,8 +51,8 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			if (options.signal.aborted) {
 				this[$flags] |= Flags.Aborted;
 			} else {
-				this.abort = this.abort.bind(this);
-				options.signal.addEventListener("abort", this.abort);
+				this.dispose = this.dispose.bind(this);
+				options.signal.addEventListener("abort", this.dispose);
 			}
 		}
 	}
@@ -107,7 +107,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		return this;
 	}
 
-	abort(): void {
+	dispose(): void {
 		this[$dependencies].unsubscribe();
 
 		Subscription.completeAll(this[$subscribers]);
@@ -115,7 +115,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$flags] |= Flags.Aborted;
 		this[$dependencies] = null as any;
 		if (this[$options]?.signal) {
-			this[$options].signal.removeEventListener("abort", this.abort);
+			this[$options].signal.removeEventListener("abort", this.dispose);
 		}
 	}
 
