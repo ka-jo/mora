@@ -58,14 +58,14 @@ describe("BaseScope", () => {
 
 		it("should accept a parent option", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			expect(child[$parent]).toBe(parent);
 		});
 
 		it("should add itself to parent's children when parent is provided", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			expect(parent[$children]).toContain(child);
 			expect(parent[$children]).toHaveLength(1);
@@ -73,16 +73,16 @@ describe("BaseScope", () => {
 
 		it("should set the correct index when added to parent", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			expect(child[$index]).toBe(0);
 		});
 
 		it("should set sequential indices for multiple children", () => {
 			const parent = new BaseScope();
-			const child1 = new BaseScope({ parent });
-			const child2 = new BaseScope({ parent });
-			const child3 = new BaseScope({ parent });
+			const child1 = new BaseScope({ scope: parent });
+			const child2 = new BaseScope({ scope: parent });
+			const child3 = new BaseScope({ scope: parent });
 
 			expect(child1[$index]).toBe(0);
 			expect(child2[$index]).toBe(1);
@@ -94,12 +94,12 @@ describe("BaseScope", () => {
 			parent.dispose();
 
 			expect(() => {
-				new BaseScope({ parent });
+				new BaseScope({ scope: parent });
 			}).toThrow("Cannot add scope to disposed parent");
 		});
 
 		it("should allow creating scope with explicit parent: null", () => {
-			const scope = new BaseScope({ parent: null });
+			const scope = new BaseScope({ scope: null });
 
 			expect(scope[$parent]).toBeNull();
 		});
@@ -193,7 +193,7 @@ describe("BaseScope", () => {
 
 		it("should yield child scopes", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			const scopes = Array.from(parent.scopes());
 
@@ -203,9 +203,9 @@ describe("BaseScope", () => {
 
 		it("should yield multiple child scopes", () => {
 			const parent = new BaseScope();
-			const child1 = new BaseScope({ parent });
-			const child2 = new BaseScope({ parent });
-			const child3 = new BaseScope({ parent });
+			const child1 = new BaseScope({ scope: parent });
+			const child2 = new BaseScope({ scope: parent });
+			const child3 = new BaseScope({ scope: parent });
 
 			const scopes = Array.from(parent.scopes());
 
@@ -217,7 +217,7 @@ describe("BaseScope", () => {
 
 		it("should yield no scopes after disposal", () => {
 			const parent = new BaseScope();
-			new BaseScope({ parent });
+			new BaseScope({ scope: parent });
 
 			parent.dispose();
 
@@ -228,7 +228,7 @@ describe("BaseScope", () => {
 
 		it("should be iterable multiple times", () => {
 			const parent = new BaseScope();
-			new BaseScope({ parent });
+			new BaseScope({ scope: parent });
 
 			const scopes1 = Array.from(parent.scopes());
 			const scopes2 = Array.from(parent.scopes());
@@ -333,7 +333,7 @@ describe("BaseScope", () => {
 
 		it("should set parent to null", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			child.dispose();
 
@@ -355,9 +355,9 @@ describe("BaseScope", () => {
 
 		it("should dispose all children", () => {
 			const parent = new BaseScope();
-			const child1 = new BaseScope({ parent });
-			const child2 = new BaseScope({ parent });
-			const child3 = new BaseScope({ parent });
+			const child1 = new BaseScope({ scope: parent });
+			const child2 = new BaseScope({ scope: parent });
+			const child3 = new BaseScope({ scope: parent });
 
 			parent.dispose();
 
@@ -368,9 +368,9 @@ describe("BaseScope", () => {
 
 		it("should dispose nested children", () => {
 			const grandparent = new BaseScope();
-			const parent = new BaseScope({ parent: grandparent });
-			const child = new BaseScope({ parent });
-			const grandchild = new BaseScope({ parent: child });
+			const parent = new BaseScope({ scope: grandparent });
+			const child = new BaseScope({ scope: parent });
+			const grandchild = new BaseScope({ scope: child });
 
 			grandparent.dispose();
 
@@ -382,8 +382,8 @@ describe("BaseScope", () => {
 
 		it("should dispose children before parent", () => {
 			const parent = new BaseScope();
-			const child1 = new BaseScope({ parent });
-			const child2 = new BaseScope({ parent });
+			const child1 = new BaseScope({ scope: parent });
+			const child2 = new BaseScope({ scope: parent });
 
 			const parentSpy = vi.spyOn(parent, "dispose");
 			const child1Spy = vi.spyOn(child1, "dispose");
@@ -408,7 +408,7 @@ describe("BaseScope", () => {
 
 		it("should remove itself from parent's children array", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			expect(parent[$children]).toContain(child);
 
@@ -419,9 +419,9 @@ describe("BaseScope", () => {
 
 		it("should handle disposal of last child correctly", () => {
 			const parent = new BaseScope();
-			const child1 = new BaseScope({ parent });
-			const child2 = new BaseScope({ parent });
-			const child3 = new BaseScope({ parent });
+			const child1 = new BaseScope({ scope: parent });
+			const child2 = new BaseScope({ scope: parent });
+			const child3 = new BaseScope({ scope: parent });
 
 			child3.dispose();
 
@@ -433,7 +433,7 @@ describe("BaseScope", () => {
 
 		it("should handle disposal when parent is already disposed", () => {
 			const parent = new BaseScope();
-			const child = new BaseScope({ parent });
+			const child = new BaseScope({ scope: parent });
 
 			parent.dispose();
 

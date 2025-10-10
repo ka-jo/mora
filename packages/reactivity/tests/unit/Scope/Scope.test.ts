@@ -21,7 +21,7 @@ describe("Scope", () => {
 
 		it("should be callable with options", () => {
 			expect(() => {
-				const scope = Scope({ parent: null });
+				const scope = Scope({ scope: null });
 				expect(scope).toBeDefined();
 			}).not.toThrowError();
 		});
@@ -180,7 +180,7 @@ describe("Scope", () => {
 
 		it("should be iterable with for...of", () => {
 			const parent = Scope();
-			const child = Scope({ parent });
+			const child = Scope({ scope: parent });
 
 			expect(() => {
 				for (const scope of parent.scopes()) {
@@ -191,8 +191,8 @@ describe("Scope", () => {
 
 		it("should be convertible to array", () => {
 			const parent = Scope();
-			const child1 = Scope({ parent });
-			const child2 = Scope({ parent });
+			const child1 = Scope({ scope: parent });
+			const child2 = Scope({ scope: parent });
 
 			const scopes = Array.from(parent.scopes());
 			expect(scopes).toHaveLength(2);
@@ -209,7 +209,7 @@ describe("Scope", () => {
 
 		it("should return empty iterator after disposal", () => {
 			const parent = Scope();
-			const child = Scope({ parent });
+			const child = Scope({ scope: parent });
 
 			parent.dispose();
 

@@ -13,12 +13,12 @@ export class BaseScope implements Scope {
 	declare [$dependencies]: Set<Observable> | null;
 
 	constructor(options?: ScopeOptions) {
-		if (options?.parent) {
-			const parentChildren = options.parent[$children];
+		if (options?.scope) {
+			const parentChildren = options.scope[$children];
 			if (parentChildren === null) {
 				throw new Error("Cannot add scope to disposed parent");
 			}
-			this[$parent] = options.parent;
+			this[$parent] = options.scope;
 			this[$index] = parentChildren.length;
 			parentChildren.push(this);
 		} else {

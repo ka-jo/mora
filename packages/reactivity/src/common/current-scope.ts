@@ -1,23 +1,17 @@
 import type { Scope } from "@/Scope";
 
-const SCOPE_STACK: Scope[] = [];
-
 export let currentScope: Scope | undefined = undefined;
 
 /**
+ * Sets the active scope and returns the previous active scope. Consumers should call this function
+ * twice: once to set the new active scope and once to restore the previous active scope.
+ *
+ * @param scope - The scope to set as active. If undefined, it clears the active scope.
+ * @returns The previous active scope.
  * @internal
  */
-export function pushActiveScope(scope: Scope): Scope {
-	SCOPE_STACK.push(scope);
+export function setActiveScope(scope: Scope | undefined): Scope | undefined {
+	const previousScope = currentScope;
 	currentScope = scope;
-	return scope;
-}
-
-/**
- * @internal
- */
-export function popActiveScope(): Scope | undefined {
-	const scope = SCOPE_STACK.pop();
-	currentScope = SCOPE_STACK[SCOPE_STACK.length - 1];
-	return scope;
+	return previousScope;
 }
