@@ -3,11 +3,11 @@ import { $compute, $flags, $dependencies, $observer } from "@/common/symbols";
 import { popTrackingContext, pushTrackingContext } from "@/common/tracking-context";
 import { Observer } from "@/common/types";
 import { EffectInstance } from "@/Effect/types";
-import type { Dependency } from "@/common/Dependency";
+import { Subscription } from "@/common/Subscription";
 
 export class BaseEffect implements EffectInstance {
 	[$flags]: number = 0;
-	[$dependencies]: Dependency[];
+	[$dependencies]: Subscription[];
 	[$observer]: Partial<Observer>;
 	[$compute]: () => void;
 
@@ -42,7 +42,7 @@ export class BaseEffect implements EffectInstance {
 		if (!(effect[$flags] & Flags.Enabled)) return;
 
 		for (const dep of effect[$dependencies]) {
-			dep.subscription.unsubscribe();
+			dep.unsubscribe();
 		}
 
 		// Dependencies are created during tracking

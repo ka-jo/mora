@@ -1,5 +1,13 @@
 import type { Observable, Observer } from "@/common/types";
-import { $flags, $subscribersIndex, $observable, $observer, $subscribers } from "@/common/symbols";
+import {
+	$flags,
+	$subscribersIndex,
+	$dependenciesIndex,
+	$observable,
+	$observer,
+	$subscribers,
+	$value,
+} from "@/common/symbols";
 import { Flags } from "@/common/flags";
 import { createObserver, NO_OP } from "@/common/util";
 
@@ -11,6 +19,9 @@ import { createObserver, NO_OP } from "@/common/util";
  * subscriptions to be enabled/disabled without full disposal. When disabled, the
  * subscription is removed from the observable's notification list for optimal
  * performance, but can be re-enabled and added back to the list.
+ *
+ * Additionally, subscriptions can act as dependency trackers for reactive computations,
+ * storing snapshot values for change detection and maintaining position in dependency arrays.
  *
  * @public
  */
@@ -24,8 +35,14 @@ export class Subscription {
 	/** @internal Observer that receives notifications */
 	declare [$observer]: Observer;
 
-	/** @internal Index position in the subscribers array */
+	/** @internal Index position in the observable's subscribers array */
 	declare [$subscribersIndex]: number;
+
+	/** @internal Index position in the dependant's dependencies array (for reactive tracking) */
+	declare [$dependenciesIndex]: number;
+
+	/** @internal Snapshot value for change detection in reactive computations */
+	declare [$value]?: unknown;
 
 	/**
 	 * Creates a new subscription linking an observable to an observer.
@@ -41,6 +58,7 @@ export class Subscription {
 		this[$observable] = observable;
 		this[$observer] = observer;
 		this[$subscribersIndex] = -1;
+		this[$dependenciesIndex] = -1;
 	}
 
 	/**
@@ -203,6 +221,8 @@ export class Subscription {
 		subscription[$observable] = null as any;
 		subscription[$observer] = null as any;
 		subscription[$subscribersIndex] = -1;
+		subscription[$dependenciesIndex] = -1;
+		subscription[$value] = null;
 	}
 
 	/**

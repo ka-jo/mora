@@ -4,6 +4,7 @@ export const $observable: typeof Symbol.observable = Symbol_observable as any;
 export const $value: unique symbol = Symbol("value");
 export const $subscribers: unique symbol = Symbol("subscribers");
 export const $subscribersIndex: unique symbol = Symbol("subscribersIndex");
+export const $dependenciesIndex: unique symbol = Symbol("dependenciesIndex");
 export const $flags: unique symbol = Symbol("flags");
 export const $ref: unique symbol = Symbol("ref");
 export const $options: unique symbol = Symbol("options");

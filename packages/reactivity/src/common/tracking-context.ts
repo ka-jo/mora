@@ -1,6 +1,6 @@
 import { Observable, Observer } from "@/common/types";
-import { Dependency } from "@/common/Dependency";
-import { $value } from "@/common/symbols";
+import { Subscription } from "@/common/Subscription";
+import { $value, $dependenciesIndex } from "@/common/symbols";
 import { NO_OP } from "@/common/util";
 
 const CONTEXT_STACK = new Array<DependencySet>();
@@ -26,10 +26,10 @@ export function popTrackingContext(): DependencySet | undefined {
 
 /**
  * @internal
- * A dependency set that extends Array to store dependencies while keeping
+ * A dependency set that extends Array to store subscriptions as dependencies while keeping
  * the observer reference for internal subscription creation.
  */
-export class DependencySet extends Array<Dependency> {
+export class DependencySet extends Array<Subscription> {
 	private declare readonly observer: Partial<Observer>;
 
 	constructor(observer: Partial<Observer>) {
@@ -39,23 +39,25 @@ export class DependencySet extends Array<Dependency> {
 
 	/**
 	 * Tracks a dependency by creating a subscription to the observable source and storing
-	 * the resulting dependency. This method is called during reactive computation to
-	 * eagerly establish subscriptions for all accessed observables.
+	 * it with the proper index and snapshot value. This method is called during reactive
+	 * computation to eagerly establish subscriptions for all accessed observables.
 	 *
 	 * @param source - The observable source that was accessed during tracking
 	 * @param property - The property key that was accessed (typically $value)
 	 */
 	track(source: Observable, property: PropertyKey): void {
 		const subscription = source.subscribe(this.observer);
-		this.push(new Dependency(source, subscription));
+		subscription[$dependenciesIndex] = this.length;
+		subscription[$value] = source[$value];
+		this.push(subscription);
 	}
 
 	/**
 	 * Unsubscribes from all dependencies in this dependency set.
 	 */
 	unsubscribe(): void {
-		for (const dep of this) {
-			dep.subscription.unsubscribe();
+		for (const subscription of this) {
+			subscription.unsubscribe();
 		}
 	}
 

@@ -1,45 +1,44 @@
 import { vi } from "vitest";
-import { Dependency } from "@/common/Dependency";
 import { Subscription } from "@/common/Subscription";
 import { Flags } from "@/common/flags";
-import { $dependencies, $flags, $observable, $value, $compute } from "@/common/symbols";
+import {
+	$dependencies,
+	$flags,
+	$observable,
+	$value,
+	$compute,
+	$dependenciesIndex,
+} from "@/common/symbols";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 
-// Helper function to create a mock dependency with proper source
+// Helper function to create a mock subscription with dependency tracking fields
 function createMockDependency(
 	overrides: Partial<{
 		isDirty: boolean;
-		isOutdated: boolean;
 		sourceValue: unknown;
 		snapshotValue: unknown;
 		hasCompute: boolean;
 	}>
-): Dependency {
-	const {
-		isDirty = false,
-		isOutdated = false,
-		sourceValue = 42,
-		snapshotValue = 42,
-		hasCompute = false,
-	} = overrides;
+): Subscription {
+	const { isDirty = false, sourceValue = 42, snapshotValue = 42, hasCompute = false } = overrides;
 
-	const mockSource: any = {
+	const mockObservable: any = {
 		[$flags]: isDirty ? Flags.Dirty : 0,
 		[$value]: sourceValue,
 	};
 
 	if (hasCompute) {
-		mockSource[$compute] = vi.fn();
+		mockObservable[$compute] = vi.fn();
 	}
 
-	const mockSubscription = { unsubscribe: vi.fn() };
+	// Create a real subscription but override dependency tracking fields
+	const subscription = new Subscription(mockObservable, { next: vi.fn() } as any);
+	// Set the snapshot value to simulate what was captured during tracking
+	(subscription as any)[$value] = snapshotValue;
+	// Set a mock index to indicate it's part of a dependencies array
+	(subscription as any)[$dependenciesIndex] = 0;
 
-	// Create a real dependency but override its value property
-	const dep = new Dependency(mockSource, mockSubscription as any);
-	// Override the private value to simulate the snapshot
-	(dep as any).value = snapshotValue;
-
-	return dep;
+	return subscription;
 }
 
 describe("ComputedRef", () => {
@@ -91,7 +90,6 @@ describe("ComputedRef", () => {
 				ref[$flags] = Flags.Dirty;
 				ref[$dependencies] = [
 					createMockDependency({
-						isOutdated: true,
 						sourceValue: 100,
 						snapshotValue: 50, // Different values to make it outdated
 					}),
@@ -111,7 +109,6 @@ describe("ComputedRef", () => {
 				ref[$flags] = Flags.Dirty;
 				ref[$dependencies] = [
 					createMockDependency({
-						isOutdated: false,
 						sourceValue: 50,
 						snapshotValue: 50, // Same values to make it not outdated
 					}),

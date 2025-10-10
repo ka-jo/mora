@@ -19,7 +19,6 @@ import type { Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
-import type { Dependency } from "@/common/Dependency";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
@@ -29,7 +28,7 @@ const INITIAL_VALUE: any = $value;
  */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
 	declare [$subscribers]: Subscription[];
-	declare [$dependencies]: Dependency[];
+	declare [$dependencies]: Subscription[];
 	declare [$flags]: number;
 	declare [$value]: TGet;
 	declare [$ref]: ComputedRef<TGet, TSet>;
@@ -109,7 +108,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 	dispose(): void {
 		for (const dep of this[$dependencies]) {
-			dep.subscription.unsubscribe();
+			dep.unsubscribe();
 		}
 
 		Subscription.completeAll(this[$subscribers]);
@@ -132,7 +131,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			return;
 
 		for (const dep of ref[$dependencies]) {
-			dep.subscription.unsubscribe();
+			dep.unsubscribe();
 		}
 
 		pushTrackingContext(ref[$observer]);
@@ -179,10 +178,10 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	private static hasOutdatedDependenciesAfterCompute(ref: ComputedRef): boolean {
 		for (const dep of ref[$dependencies]) {
 			// If dependency is dirty, recompute it first (only computable observables can be dirty)
-			if (dep.source[$flags] & Flags.Dirty) dep.source[$compute]!();
+			if (dep[$observable][$flags] & Flags.Dirty) dep[$observable][$compute]!();
 
 			// Check if observable value has changed since this dependency was created
-			if (!Object.is(dep.source[$value], dep.value)) return true;
+			if (!Object.is(dep[$observable][$value], dep[$value])) return true;
 		}
 		return false;
 	}
