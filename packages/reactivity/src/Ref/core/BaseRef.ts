@@ -23,7 +23,7 @@ const $forwardObserver = Symbol("forward-observer");
  * @internal
  */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	declare [$subscribers]: Subscription | null;
+	declare [$subscribers]: Subscription[];
 	declare [$flags]: number;
 	declare [$value]: T;
 	declare [$ref]: BaseRef<T>;
@@ -32,7 +32,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	declare [$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
-		this[$subscribers] = null;
+		this[$subscribers] = [];
 		this[$flags] = 0;
 		this[$ref] = this;
 		this[$options] = options;

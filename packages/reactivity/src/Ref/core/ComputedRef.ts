@@ -14,12 +14,12 @@ import {
 	popTrackingContext,
 	pushTrackingContext,
 	currentContext,
-	DependencySet,
 } from "@/common/tracking-context";
 import type { Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
+import type { Dependency } from "@/common/Dependency";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
@@ -28,8 +28,8 @@ const INITIAL_VALUE: any = $value;
  * @internal
  */
 export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
-	declare [$subscribers]: Subscription | null;
-	declare [$dependencies]: DependencySet;
+	declare [$subscribers]: Subscription[];
+	declare [$dependencies]: Dependency[];
 	declare [$flags]: number;
 	declare [$value]: TGet;
 	declare [$ref]: ComputedRef<TGet, TSet>;
@@ -38,8 +38,8 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	declare [$compute]: () => void;
 
 	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
-		this[$subscribers] = null;
-		this[$dependencies] = DependencySet.NULL;
+		this[$subscribers] = [];
+		this[$dependencies] = [];
 		this[$flags] = Flags.Dirty;
 		this[$value] = INITIAL_VALUE;
 		this[$ref] = this;
@@ -108,7 +108,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	}
 
 	dispose(): void {
-		this[$dependencies].unsubscribe();
+		for (const dep of this[$dependencies]) {
+			dep.subscription.unsubscribe();
+		}
 
 		Subscription.completeAll(this[$subscribers]);
 
@@ -129,7 +131,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		if (ref[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(ref))
 			return;
 
-		ref[$dependencies].unsubscribe();
+		for (const dep of ref[$dependencies]) {
+			dep.subscription.unsubscribe();
+		}
 
 		pushTrackingContext(ref[$observer]);
 		const computedValue = ComputedRef.tryGet(ref);
@@ -149,7 +153,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	private static onDependencyChange(ref: ComputedRef<any>) {
 		ref[$flags] |= Flags.Dirty;
 		// If the ref is already queued or has no active susbscribers, we don't need to queue it
-		if (ref[$flags] & Flags.Queued || ref[$subscribers] === null) return;
+		if (ref[$flags] & Flags.Queued || ref[$subscribers].length === 0) return;
 
 		ref[$flags] |= Flags.Queued;
 

@@ -7,12 +7,12 @@ import { Ref } from "@/Ref";
 export class StoreRef<T = unknown> implements Ref<T, T> {
 	declare [$value]: T;
 	declare [$flags]: number;
-	declare [$subscribers]: Subscription | null;
+	declare [$subscribers]: Subscription[];
 	declare [$ref]: Ref<T, T>;
 
 	constructor(value: T) {
 		this[$flags] = 0;
-		this[$subscribers] = null;
+		this[$subscribers] = [];
 		this[$ref] = this;
 	}
 

@@ -35,7 +35,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 {
 	declare [$flags]: number;
 	declare [$value]: T;
-	declare [$subscribers]: Subscription | null;
+	declare [$subscribers]: Subscription[];
 	declare [$store]: BaseStore<T>;
 
 	declare proxy: Store<T>;
@@ -46,7 +46,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 	private constructor(object: T) {
 		this[$flags] = 0;
 		this[$value] = object;
-		this[$subscribers] = null;
+		this[$subscribers] = [];
 		this[$store] = this;
 		Object.defineProperty(object, $store, {
 			value: this,

@@ -42,7 +42,7 @@ export interface Observable<T = unknown> {
 	/**
 	 * @internal
 	 */
-	[$subscribers]: Subscription | null;
+	[$subscribers]: Subscription[];
 	/**
 	 * @internal
 	 */

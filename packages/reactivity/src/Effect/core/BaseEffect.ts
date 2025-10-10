@@ -1,12 +1,13 @@
 import { Flags } from "@/common/flags";
 import { $compute, $flags, $dependencies, $observer } from "@/common/symbols";
-import { popTrackingContext, pushTrackingContext, DependencySet } from "@/common/tracking-context";
+import { popTrackingContext, pushTrackingContext } from "@/common/tracking-context";
 import { Observer } from "@/common/types";
 import { EffectInstance } from "@/Effect/types";
+import type { Dependency } from "@/common/Dependency";
 
 export class BaseEffect implements EffectInstance {
 	[$flags]: number = 0;
-	[$dependencies]: DependencySet;
+	[$dependencies]: Dependency[];
 	[$observer]: Partial<Observer>;
 	[$compute]: () => void;
 
@@ -14,7 +15,7 @@ export class BaseEffect implements EffectInstance {
 
 	constructor(fn: () => void) {
 		this.run = fn;
-		this[$dependencies] = DependencySet.NULL;
+		this[$dependencies] = [];
 		this[$observer] = {
 			next: BaseEffect.onDependencyChange.bind(BaseEffect, this),
 		};
@@ -40,7 +41,9 @@ export class BaseEffect implements EffectInstance {
 
 		if (!(effect[$flags] & Flags.Enabled)) return;
 
-		effect[$dependencies].unsubscribe();
+		for (const dep of effect[$dependencies]) {
+			dep.subscription.unsubscribe();
+		}
 
 		// Dependencies are created during tracking
 		pushTrackingContext(effect[$observer]);

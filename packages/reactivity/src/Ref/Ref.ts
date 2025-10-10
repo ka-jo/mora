@@ -42,11 +42,14 @@ export interface Ref<TGet = unknown, TSet = TGet> extends Observable<TGet> {
 	[$flags]: number;
 
 	/**
-	 * The head of the intrinsic linked list containing the subscribers for this ref
+	 * The active subscriptions to this ref
 	 *
 	 * @internal
 	 */
-	[$subscribers]: Subscription | null;
+	/**
+	 * @internal
+	 */
+	[$subscribers]: Subscription[];
 
 	/**
 	 * The ref symbol is used internally to identify ref instances. It is not intended

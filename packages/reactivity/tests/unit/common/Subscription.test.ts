@@ -1,22 +1,35 @@
 import { Subscription } from "@/common/Subscription";
 import { BaseRef } from "@/Ref/core/BaseRef";
 import { Observer } from "@/common/types";
-import { $subscribers } from "@/common/symbols";
+import { $subscribers, $subscribersIndex } from "@/common/symbols";
 
 describe("Subscription", () => {
 	let refMock: BaseRef;
 	let observerMock: Observer;
 
 	beforeEach(() => {
-		refMock = { [$subscribers]: new Set() } as any;
+		refMock = { [$subscribers]: [] } as any;
 		observerMock = {
 			next: vi.fn(),
 		} as any;
 	});
 
+	/**
+	 * Helper to properly initialize a subscription as it would be in real usage.
+	 * In production code, subscriptions are created via Subscription.init() which
+	 * adds them to the subscribers array with the correct index.
+	 */
+	function createSubscription(observable = refMock, observer = observerMock): Subscription {
+		const subscription = new Subscription(observable, observer);
+		const subscribers = observable[$subscribers];
+		subscription[$subscribersIndex] = subscribers.length;
+		subscribers.push(subscription);
+		return subscription;
+	}
+
 	describe("closed property", () => {
 		it("should be readonly", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(() => {
 				// @ts-expect-error: closed is readonly
@@ -25,7 +38,7 @@ describe("Subscription", () => {
 		});
 
 		it("should be false initially", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(subscription.closed).toBe(false);
 		});
@@ -33,7 +46,7 @@ describe("Subscription", () => {
 
 	describe("enabled property", () => {
 		it("should be readonly", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(() => {
 				// @ts-expect-error: isEnabled is readonly
@@ -42,14 +55,14 @@ describe("Subscription", () => {
 		});
 
 		it("should be true initially", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 			expect(subscription.enabled).toBe(true);
 		});
 	});
 
 	describe("unsubscribe method", () => {
 		it("should set closed to true", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			subscription.unsubscribe();
 
@@ -57,7 +70,7 @@ describe("Subscription", () => {
 		});
 
 		it("should set enabled to false", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			subscription.unsubscribe();
 
@@ -65,13 +78,13 @@ describe("Subscription", () => {
 		});
 
 		it("should return undefined", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 			const result = subscription.unsubscribe();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(() => {
 				subscription.unsubscribe();
@@ -82,13 +95,13 @@ describe("Subscription", () => {
 
 	describe("enable method", () => {
 		it("should return undefined", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 			const result = subscription.enable();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(() => {
 				subscription.enable();
@@ -97,7 +110,7 @@ describe("Subscription", () => {
 		});
 
 		it("should set enabled to true", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			subscription.disable();
 
@@ -111,13 +124,13 @@ describe("Subscription", () => {
 
 	describe("disable method", () => {
 		it("should return undefined", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 			const result = subscription.disable();
 			expect(result).toBeUndefined();
 		});
 
 		it("should not throw an error when called multiple times", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			expect(() => {
 				subscription.disable();
@@ -126,7 +139,7 @@ describe("Subscription", () => {
 		});
 
 		it("should set enabled to false", () => {
-			const subscription = new Subscription(refMock, observerMock);
+			const subscription = createSubscription();
 
 			subscription.disable();
 

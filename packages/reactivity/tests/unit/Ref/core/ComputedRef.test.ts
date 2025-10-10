@@ -3,16 +3,7 @@ import { Dependency } from "@/common/Dependency";
 import { Subscription } from "@/common/Subscription";
 import { Flags } from "@/common/flags";
 import { $dependencies, $flags, $observable, $value, $compute } from "@/common/symbols";
-import { DependencySet } from "@/common/tracking-context";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
-
-// Helper function to create DependencySet with mock dependencies
-function createMockDependencySet(dependencies: Dependency[]): DependencySet {
-	const depSet = new DependencySet({});
-	dependencies.forEach((dep, i) => (depSet[i] = dep));
-	(depSet as any).length = dependencies.length;
-	return depSet;
-}
 
 // Helper function to create a mock dependency with proper source
 function createMockDependency(
@@ -98,13 +89,13 @@ describe("ComputedRef", () => {
 
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = createMockDependencySet([
+				ref[$dependencies] = [
 					createMockDependency({
 						isOutdated: true,
 						sourceValue: 100,
 						snapshotValue: 50, // Different values to make it outdated
 					}),
-				]);
+				];
 
 				const result = ref.get();
 				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty
@@ -118,13 +109,13 @@ describe("ComputedRef", () => {
 
 				ref[$value] = 27;
 				ref[$flags] = Flags.Dirty;
-				ref[$dependencies] = createMockDependencySet([
+				ref[$dependencies] = [
 					createMockDependency({
 						isOutdated: false,
 						sourceValue: 50,
 						snapshotValue: 50, // Same values to make it not outdated
 					}),
-				]);
+				];
 
 				const result = ref.get();
 				// Even though the we set the cached value to 27, the getter should be called because the ref is dirty

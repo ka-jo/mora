@@ -1,5 +1,5 @@
 import type { Observable, Observer } from "@/common/types";
-import { $flags, $next, $observable, $observer, $prev, $subscribers } from "@/common/symbols";
+import { $flags, $subscribersIndex, $observable, $observer, $subscribers } from "@/common/symbols";
 import { Flags } from "@/common/flags";
 import { createObserver, NO_OP } from "@/common/util";
 
@@ -16,19 +16,16 @@ import { createObserver, NO_OP } from "@/common/util";
  */
 export class Subscription {
 	/** @internal Bitwise flags for tracking subscription state */
-	[$flags]: number = Flags.Enabled;
+	declare [$flags]: number;
 
 	/** @internal Reference to the source observable */
-	[$observable]: Observable;
+	declare [$observable]: Observable;
 
 	/** @internal Observer that receives notifications */
-	[$observer]: Observer;
+	declare [$observer]: Observer;
 
-	/** @internal Previous subscription in the doubly-linked list */
-	[$prev]: Subscription | null = null;
-
-	/** @internal Next subscription in the doubly-linked list */
-	[$next]: Subscription | null = null;
+	/** @internal Index position in the subscribers array */
+	declare [$subscribersIndex]: number;
 
 	/**
 	 * Creates a new subscription linking an observable to an observer.
@@ -40,8 +37,10 @@ export class Subscription {
 	 * @param observer - The observer that will receive notifications
 	 */
 	constructor(observable: Observable, observer: Observer<unknown>) {
+		this[$flags] = Flags.Enabled;
 		this[$observable] = observable;
 		this[$observer] = observer;
+		this[$subscribersIndex] = -1;
 	}
 
 	/**
@@ -80,15 +79,14 @@ export class Subscription {
 	unsubscribe(): void {
 		if (this[$flags] & Flags.Aborted) return;
 
-		if (this[$prev]) {
-			this[$prev][$next] = this[$next];
-		} else {
-			// We're the head, update the list's head
-			this[$observable][$subscribers] = this[$next];
-		}
+		const subscribers = this[$observable][$subscribers];
+		const index = this[$subscribersIndex];
 
-		if (this[$next]) {
-			this[$next][$prev] = this[$prev];
+		// Pop and swap to remove this subscription from the array
+		const lastSubscription = subscribers.pop()!;
+		if (lastSubscription !== this) {
+			subscribers[index] = lastSubscription;
+			lastSubscription[$subscribersIndex] = index;
 		}
 
 		Subscription.cleanup(this);
@@ -98,7 +96,7 @@ export class Subscription {
 	 * Enables this subscription to receive notifications from the observable.
 	 *
 	 * @remarks
-	 * When a disabled subscription is enabled, it is added to the head of the
+	 * When a disabled subscription is enabled, it is added back to the
 	 * observable's notification list.
 	 * If the subscription is already enabled, this method does nothing.
 	 *
@@ -111,13 +109,9 @@ export class Subscription {
 
 		this[$flags] |= Flags.Enabled;
 
-		const currentHead = this[$observable][$subscribers];
-		if (currentHead) {
-			this[$next] = currentHead;
-			currentHead[$prev] = this;
-		}
-
-		this[$observable][$subscribers] = this;
+		const subscribers = this[$observable][$subscribers];
+		this[$subscribersIndex] = subscribers.length;
+		subscribers.push(this);
 	}
 
 	/**
@@ -141,15 +135,14 @@ export class Subscription {
 
 		this[$flags] &= ~Flags.Enabled;
 
-		if (this[$prev]) {
-			this[$prev][$next] = this[$next];
-		} else {
-			// We're the head, update the list's head
-			this[$observable][$subscribers] = this[$next];
-		}
+		const subscribers = this[$observable][$subscribers];
+		const index = this[$subscribersIndex];
 
-		if (this[$next]) {
-			this[$next][$prev] = this[$prev];
+		// Pop and swap to remove this subscription from the array
+		const lastSubscription = subscribers.pop()!;
+		if (lastSubscription !== this) {
+			subscribers[index] = lastSubscription;
+			lastSubscription[$subscribersIndex] = index;
 		}
 	}
 
@@ -188,13 +181,11 @@ export class Subscription {
 		}
 		const subscription = new Subscription(observable, observer);
 
-		const currentHead = observable[$subscribers];
-		if (currentHead) {
-			subscription[$next] = currentHead;
-			currentHead[$prev] = subscription;
-		}
+		const subscribers = observable[$subscribers];
+		subscription[$subscribersIndex] = subscribers.length;
+		subscribers.push(subscription);
 
-		return (observable[$subscribers] = subscription);
+		return subscription;
 	}
 
 	/**
@@ -211,39 +202,37 @@ export class Subscription {
 		subscription[$flags] = Flags.Aborted;
 		subscription[$observable] = null as any;
 		subscription[$observer] = null as any;
-		subscription[$prev] = null;
-		subscription[$next] = null;
+		subscription[$subscribersIndex] = -1;
 	}
 
 	/**
-	 * Notifies all subscriptions in a linked list with a new value.
+	 * Notifies all subscriptions in an array with a new value.
 	 *
 	 * @internal
 	 * This static method provides efficient broadcasting by iterating directly
-	 * through the subscription linked list without the overhead of an intermediate
-	 * SubscriptionList object.
+	 * through the subscription array.
 	 *
-	 * @param subscription - The head of the subscription linked list
+	 * @param subscribers - The array of subscriptions
 	 * @param value - The value to broadcast to all subscribers
 	 */
-	static notifyAll<T>(subscription: Subscription | null, value: T): void {
-		while (subscription) {
-			subscription[$observer].next(value);
-			subscription = subscription[$next];
+	static notifyAll<T>(subscribers: Subscription[], value: T): void {
+		const length = subscribers.length;
+		for (let i = 0; i < length; i++) {
+			subscribers[i][$observer].next(value);
 		}
 	}
 
 	/**
-	 * Notifies all subscriptions in a linked list of an error.
+	 * Notifies all subscriptions in an array of an error.
 	 *
 	 * @internal
-	 * @param subscription - The head of the subscription linked list
+	 * @param subscribers - The array of subscriptions
 	 * @param error - The error to broadcast to all subscribers
 	 */
-	static errorAll(subscription: Subscription | null, error: Error): void {
-		while (subscription) {
-			subscription[$observer].error(error);
-			subscription = subscription[$next];
+	static errorAll(subscribers: Subscription[], error: Error): void {
+		const length = subscribers.length;
+		for (let i = 0; i < length; i++) {
+			subscribers[i][$observer].error(error);
 		}
 	}
 
@@ -251,27 +240,31 @@ export class Subscription {
 	 * Notifies all subscriptions that the observable is complete and cleans them up.
 	 *
 	 * @internal
-	 * @param subscription - The head of the subscription linked list
+	 * @param subscribers - The array of subscriptions
 	 */
-	static completeAll(subscription: Subscription | null): void {
-		while (subscription) {
+	static completeAll(subscribers: Subscription[]): void {
+		const length = subscribers.length;
+		for (let i = 0; i < length; i++) {
+			const subscription = subscribers[i];
+			subscription[$flags] = Flags.Aborted;
 			subscription[$observer].complete();
-			const next = subscription[$next];
-			Subscription.cleanup(subscription);
-			subscription = next;
+			subscription[$observable] = null as any;
+			subscription[$observer] = null as any;
+			subscription[$subscribersIndex] = -1;
 		}
+		subscribers.length = 0;
 	}
 
 	/**
 	 * Notifies all subscriptions that their dependencies are dirty.
 	 *
 	 * @internal
-	 * @param subscription - The head of the subscription linked list
+	 * @param subscribers - The array of subscriptions
 	 */
-	static dirtyAll(subscription: Subscription | null): void {
-		while (subscription) {
-			subscription[$observer].dirty();
-			subscription = subscription[$next];
+	static dirtyAll(subscribers: Subscription[]): void {
+		const length = subscribers.length;
+		for (let i = 0; i < length; i++) {
+			subscribers[i][$observer].dirty();
 		}
 	}
 }
