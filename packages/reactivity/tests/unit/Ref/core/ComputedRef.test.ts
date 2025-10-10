@@ -8,8 +8,13 @@ import {
 	$value,
 	$compute,
 	$dependenciesIndex,
+	$subscribers,
+	$subscribersIndex,
+	$parent,
+	$children,
 } from "@/common/symbols";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
+import { Ref } from "@/Ref/Ref";
 
 // Helper function to create a mock subscription with dependency tracking fields
 function createMockDependency(
@@ -25,6 +30,7 @@ function createMockDependency(
 	const mockObservable: any = {
 		[$flags]: isDirty ? Flags.Dirty : 0,
 		[$value]: sourceValue,
+		[$subscribers]: [], // Need this for unsubscribe to work
 	};
 
 	if (hasCompute) {
@@ -37,6 +43,9 @@ function createMockDependency(
 	(subscription as any)[$value] = snapshotValue;
 	// Set a mock index to indicate it's part of a dependencies array
 	(subscription as any)[$dependenciesIndex] = 0;
+	// Add subscription to the mock observable's subscribers array so unsubscribe works
+	(subscription as any)[$subscribersIndex] = 0;
+	mockObservable[$subscribers].push(subscription);
 
 	return subscription;
 }
@@ -390,5 +399,89 @@ describe("ComputedRef", () => {
 		ref.get();
 
 		expect(getter).toHaveBeenCalled();
+	});
+
+	describe("Scope functionality", () => {
+		it("should have scope properties initialized", () => {
+			const ref = new ComputedRef({ get: () => 0 });
+
+			expect(ref[$parent]).toBe(null);
+			expect(ref[$children]).toEqual([]);
+		});
+
+		it("should support parent-child scope hierarchy", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			const child = new ComputedRef({ get: () => 2, scope: parent });
+
+			expect(child[$parent]).toBe(parent);
+			expect(parent[$children]).toContain(child);
+			expect(parent[$children]?.length).toBe(1);
+		});
+
+		it("should throw when adding to disposed parent", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			parent.dispose();
+
+			expect(() => {
+				new ComputedRef({ get: () => 2, scope: parent });
+			}).toThrow("Cannot add scope to disposed parent");
+		});
+
+		it("should dispose child scopes when parent is disposed", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			const child = new ComputedRef({ get: () => 2, scope: parent });
+
+			parent.dispose();
+
+			expect(child[$children]).toBe(null);
+			expect(parent[$children]).toBe(null);
+		});
+
+		it("should remove itself from parent on dispose", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			const child = new ComputedRef({ get: () => 2, scope: parent });
+
+			child.dispose();
+
+			expect(parent[$children]?.length).toBe(0);
+			expect(child[$parent]).toBe(null);
+		});
+
+		it("should yield tracked observables from observables() iterator", () => {
+			const source = Ref(42);
+			const ref = new ComputedRef({ get: () => source.get() });
+			ref.get(); // Force computation to track dependencies
+
+			const observables = Array.from(ref.observables());
+			expect(observables.length).toBe(1);
+			expect(observables[0]).toBe(source);
+		});
+
+		it("should yield nothing from observables() after disposal", () => {
+			const ref = new ComputedRef({ get: () => 42 });
+			ref.dispose();
+
+			const observables = Array.from(ref.observables());
+			expect(observables).toEqual([]);
+		});
+
+		it("should yield child scopes from scopes() iterator", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			const child1 = new ComputedRef({ get: () => 2, scope: parent });
+			const child2 = new ComputedRef({ get: () => 3, scope: parent });
+
+			const scopes = Array.from(parent.scopes());
+			expect(scopes).toEqual([child1, child2]);
+		});
+
+		it("should yield nothing from scopes() after disposal", () => {
+			const parent = new ComputedRef({ get: () => 1 });
+			new ComputedRef({ get: () => 2, scope: parent });
+
+			parent.dispose();
+
+			const scopes = Array.from(parent.scopes());
+			expect(scopes).toEqual([]);
+		});
 	});
 });

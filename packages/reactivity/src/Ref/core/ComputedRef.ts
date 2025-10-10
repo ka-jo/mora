@@ -9,16 +9,16 @@ import {
 	$observable,
 	$compute,
 	$observer,
+	$parent,
+	$children,
+	$index,
 } from "@/common/symbols";
-import {
-	popTrackingContext,
-	pushTrackingContext,
-	currentContext,
-} from "@/common/tracking-context";
-import type { Observer } from "@/common/types";
+import { popTrackingContext, pushTrackingContext, currentContext } from "@/common/tracking-context";
+import type { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
+import type { Scope } from "@/Scope/Scope";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
@@ -26,7 +26,7 @@ const INITIAL_VALUE: any = $value;
 /**
  * @internal
  */
-export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet> {
+export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>, Scope {
 	declare [$subscribers]: Subscription[];
 	declare [$dependencies]: Subscription[];
 	declare [$flags]: number;
@@ -35,6 +35,9 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	declare [$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
 	declare [$observer]: Partial<Observer>;
 	declare [$compute]: () => void;
+	declare [$parent]: Scope | null;
+	declare [$children]: Scope[] | null;
+	declare [$index]: number;
 
 	constructor(options: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>) {
 		this[$subscribers] = [];
@@ -45,6 +48,21 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$options] = options;
 		this[$observer] = ComputedRef.initObserver(this);
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
+
+		// Initialize scope hierarchy
+		if (options.scope) {
+			const parentChildren = options.scope[$children];
+			if (parentChildren === null) {
+				throw new Error("Cannot add scope to disposed parent");
+			}
+			this[$parent] = options.scope;
+			this[$index] = parentChildren.length;
+			parentChildren.push(this);
+		} else {
+			this[$parent] = null;
+			this[$index] = -1;
+		}
+		this[$children] = [];
 
 		if (options.signal) {
 			if (options.signal.aborted) {
@@ -106,7 +124,31 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		return this;
 	}
 
+	*observables(): IterableIterator<Observable> {
+		if (this[$flags] & Flags.Aborted) return;
+
+		for (const subscription of this[$dependencies]) {
+			yield subscription[$observable];
+		}
+	}
+
+	*scopes(): IterableIterator<Scope> {
+		if (this[$children]) yield* this[$children];
+	}
+
+	observe(observable: Observable): void {
+		// No-op for now
+	}
+
 	dispose(): void {
+		if (this[$flags] & Flags.Aborted) return;
+
+		const children = this[$children]!;
+		this[$children] = null;
+		for (const child of children) {
+			child.dispose();
+		}
+
 		for (const dep of this[$dependencies]) {
 			dep.unsubscribe();
 		}
@@ -115,6 +157,19 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 		this[$flags] |= Flags.Aborted;
 		this[$dependencies] = null as any;
+
+		const parent = this[$parent];
+		this[$parent] = null;
+		if (parent && parent[$children]) {
+			const parentChildren = parent[$children];
+			const index = this[$index];
+			const lastChild = parentChildren.pop()!;
+			if (lastChild !== this) {
+				parentChildren[index] = lastChild;
+				lastChild[$index] = index;
+			}
+		}
+
 		if (this[$options]?.signal) {
 			this[$options].signal.removeEventListener("abort", this.dispose);
 		}
