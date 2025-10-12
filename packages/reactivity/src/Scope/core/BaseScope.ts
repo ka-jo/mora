@@ -2,6 +2,7 @@ import { Observable } from "@/common/types";
 import { $children, $dependencies, $index, $parent } from "@/common/symbols";
 import type { ScopeOptions } from "@/Scope/types";
 import type { Scope } from "@/Scope/Scope";
+import { currentScope } from "@/common/current-scope";
 
 /**
  * @internal
@@ -13,12 +14,13 @@ export class BaseScope implements Scope {
 	declare [$dependencies]: Set<Observable> | null;
 
 	constructor(options?: ScopeOptions) {
-		if (options?.scope) {
-			const parentChildren = options.scope[$children];
+		const parent = options?.scope ?? currentScope ?? null;
+		if (parent) {
+			const parentChildren = parent[$children];
 			if (parentChildren === null) {
 				throw new Error("Cannot add scope to disposed parent");
 			}
-			this[$parent] = options.scope;
+			this[$parent] = parent;
 			this[$index] = parentChildren.length;
 			parentChildren.push(this);
 		} else {

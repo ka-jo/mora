@@ -13,8 +13,8 @@ describe("Scope constructor", () => {
 		expectTypeOf(Scope).toBeCallableWith();
 	});
 
-	it("should accept an options object (parent)", () => {
-		expectTypeOf(Scope).toBeCallableWith({ parent: null });
+	it("should accept an options object (scope)", () => {
+		expectTypeOf(Scope).toBeCallableWith({ scope: null });
 	});
 
 	it("should accept an options object (signal)", () => {

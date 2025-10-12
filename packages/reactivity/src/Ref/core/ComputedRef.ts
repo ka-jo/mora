@@ -19,6 +19,7 @@ import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import type { Scope } from "@/Scope/Scope";
+import { currentScope } from "@/common/current-scope";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
@@ -49,13 +50,13 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$observer] = ComputedRef.initObserver(this);
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
 
-		// Initialize scope hierarchy
-		if (options.scope) {
-			const parentChildren = options.scope[$children];
+		const parent = options?.scope ?? currentScope ?? null;
+		if (parent) {
+			const parentChildren = parent[$children];
 			if (parentChildren === null) {
 				throw new Error("Cannot add scope to disposed parent");
 			}
-			this[$parent] = options.scope;
+			this[$parent] = parent;
 			this[$index] = parentChildren.length;
 			parentChildren.push(this);
 		} else {

@@ -11,7 +11,7 @@ import {
 	$flags,
 } from "@/common/symbols";
 import type { Observable } from "@/common/types";
-import type { Scope } from "@/Scope/Scope";
+import { setActiveScope } from "@/common/current-scope";
 
 // Mock Observable for testing
 class MockObservable implements Observable {
@@ -56,52 +56,68 @@ describe("BaseScope", () => {
 			expect(scope[$dependencies]?.size).toBe(0);
 		});
 
-		it("should accept a parent option", () => {
-			const parent = new BaseScope();
-			const child = new BaseScope({ scope: parent });
+		describe("parent option", () => {
+			describe("when parent is provided", () => {
+				it("should use the provided parent as parent", () => {
+					const parent = new BaseScope();
+					const child = new BaseScope({ scope: parent });
 
-			expect(child[$parent]).toBe(parent);
-		});
+					expect(child[$parent]).toBe(parent);
+				});
 
-		it("should add itself to parent's children when parent is provided", () => {
-			const parent = new BaseScope();
-			const child = new BaseScope({ scope: parent });
+				it("should add itself to the parent's children", () => {
+					const parent = new BaseScope();
+					const child = new BaseScope({ scope: parent });
 
-			expect(parent[$children]).toContain(child);
-			expect(parent[$children]).toHaveLength(1);
-		});
+					expect(parent[$children]).toContain(child);
+					expect(parent[$children]).toHaveLength(1);
+				});
 
-		it("should set the correct index when added to parent", () => {
-			const parent = new BaseScope();
-			const child = new BaseScope({ scope: parent });
+				it("should set the correct index based on parent's children", () => {
+					const parent = new BaseScope();
+					const child1 = new BaseScope({ scope: parent });
+					const child2 = new BaseScope({ scope: parent });
+					const child3 = new BaseScope({ scope: parent });
 
-			expect(child[$index]).toBe(0);
-		});
+					expect(child1[$index]).toBe(0);
+					expect(child2[$index]).toBe(1);
+					expect(child3[$index]).toBe(2);
+				});
 
-		it("should set sequential indices for multiple children", () => {
-			const parent = new BaseScope();
-			const child1 = new BaseScope({ scope: parent });
-			const child2 = new BaseScope({ scope: parent });
-			const child3 = new BaseScope({ scope: parent });
+				it("should throw when provided parent is disposed", () => {
+					const parent = new BaseScope();
+					parent.dispose();
 
-			expect(child1[$index]).toBe(0);
-			expect(child2[$index]).toBe(1);
-			expect(child3[$index]).toBe(2);
-		});
+					expect(() => {
+						new BaseScope({ scope: parent });
+					}).toThrow();
+				});
 
-		it("should throw when attempting to add child to disposed parent", () => {
-			const parent = new BaseScope();
-			parent.dispose();
+				it("should have null parent if provided parent is null", () => {
+					const scope = new BaseScope({ scope: null });
+					expect(scope[$parent]).toBeNull();
+				});
+			});
 
-			expect(() => {
-				new BaseScope({ scope: parent });
-			}).toThrow("Cannot add scope to disposed parent");
-		});
+			describe("when parent is not provided", () => {
+				it("should use active scope as parent if available", () => {
+					const parent = new BaseScope();
 
-		it("should allow creating scope with explicit parent: null", () => {
-			const scope = new BaseScope({ scope: null });
+					setActiveScope(parent);
 
-			expect(scope[$parent]).toBeNull();
+					const child = new BaseScope();
+
+					expect(child[$parent]).toBe(parent);
+					expect(parent[$children]).toContain(child);
+
+					setActiveScope(undefined);
+				});
+
+				it("should have null parent if no active scope", () => {
+					const scope = new BaseScope();
+					expect(scope[$parent]).toBeNull();
+				});
+			});
 		});
 	});
 

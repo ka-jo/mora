@@ -1,12 +1,17 @@
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 import type { Ref } from "@/Ref";
 import { Observable } from "@/common/types";
+import { Scope } from "@/Scope";
 
 describe("ComputedRef", () => {
 	it("should extend Ref", () => {
 		// refer to tests/unit/Ref/types/Ref.test-d.ts for more details
 		expectTypeOf<ComputedRef<number>>().toExtend<Ref<number>>();
 		expectTypeOf<ComputedRef<number>>().toExtend<Ref<number, number>>();
+	});
+
+	it("should extend Scope", () => {
+		expectTypeOf<ComputedRef<number>>().toExtend<Scope>();
 	});
 
 	it("should extend Observable", () => {
