@@ -1,7 +1,7 @@
 import { Observable } from "@/common/types";
 import { $children, $dependencies, $index, $parent } from "@/common/symbols";
 import type { ScopeOptions } from "@/Scope/types";
-import type { Scope } from "@/Scope/Scope";
+import { disposeScope, initScope, type Scope } from "@/Scope/Scope";
 import { currentScope } from "@/common/current-scope";
 
 /**
@@ -14,19 +14,7 @@ export class BaseScope implements Scope {
 	declare [$dependencies]: Set<Observable> | null;
 
 	constructor(options?: ScopeOptions) {
-		const parent = options?.scope ?? currentScope ?? null;
-		if (parent) {
-			const parentChildren = parent[$children];
-			if (parentChildren === null) {
-				throw new Error("Cannot add scope to disposed parent");
-			}
-			this[$parent] = parent;
-			this[$index] = parentChildren.length;
-			parentChildren.push(this);
-		} else {
-			this[$parent] = null;
-		}
-		this[$children] = [];
+		initScope(this, options);
 		this[$dependencies] = new Set();
 	}
 
@@ -45,27 +33,10 @@ export class BaseScope implements Scope {
 	}
 
 	dispose(): void {
-		if (this[$children] === null) return; // Already disposed
+		if (this[$dependencies] === null) return; // Already disposed
 
-		const children = this[$children];
 		this[$dependencies] = null;
-		this[$children] = null; // Mark as disposed
 
-		for (const child of children) {
-			child.dispose();
-		}
-
-		const parent = this[$parent];
-		this[$parent] = null;
-		if (parent) {
-			const parentChildren = parent[$children];
-			if (parentChildren) {
-				const index = this[$index];
-				const lastChild = parentChildren[parentChildren.length - 1];
-				parentChildren[index] = lastChild;
-				lastChild[$index] = index;
-				parentChildren.pop();
-			}
-		}
+		disposeScope(this);
 	}
 }

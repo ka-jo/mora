@@ -18,7 +18,7 @@ import type { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
-import type { Scope } from "@/Scope/Scope";
+import { disposeScope, initScope, type Scope } from "@/Scope/Scope";
 import { currentScope } from "@/common/current-scope";
 
 /** We use this to mark a ref that hasn't been computed yet. */
@@ -50,20 +50,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$observer] = ComputedRef.initObserver(this);
 		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
 
-		const parent = options?.scope ?? currentScope ?? null;
-		if (parent) {
-			const parentChildren = parent[$children];
-			if (parentChildren === null) {
-				throw new Error("Cannot add scope to disposed parent");
-			}
-			this[$parent] = parent;
-			this[$index] = parentChildren.length;
-			parentChildren.push(this);
-		} else {
-			this[$parent] = null;
-			this[$index] = -1;
-		}
-		this[$children] = [];
+		initScope(this, options);
 
 		if (options.signal) {
 			if (options.signal.aborted) {
@@ -144,11 +131,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	dispose(): void {
 		if (this[$flags] & Flags.Aborted) return;
 
-		const children = this[$children]!;
-		this[$children] = null;
-		for (const child of children) {
-			child.dispose();
-		}
+		disposeScope(this);
 
 		for (const dep of this[$dependencies]) {
 			dep.unsubscribe();
@@ -158,18 +141,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 		this[$flags] |= Flags.Aborted;
 		this[$dependencies] = null as any;
-
-		const parent = this[$parent];
-		this[$parent] = null;
-		if (parent && parent[$children]) {
-			const parentChildren = parent[$children];
-			const index = this[$index];
-			const lastChild = parentChildren.pop()!;
-			if (lastChild !== this) {
-				parentChildren[index] = lastChild;
-				lastChild[$index] = index;
-			}
-		}
 
 		if (this[$options]?.signal) {
 			this[$options].signal.removeEventListener("abort", this.dispose);

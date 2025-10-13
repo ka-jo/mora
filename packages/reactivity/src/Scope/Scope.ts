@@ -3,19 +3,20 @@ import { $children, $index, $parent } from "@/common/symbols";
 import { Observable } from "@/common/types";
 import { BaseScope } from "@/Scope/core/BaseScope";
 import { isScope } from "./isScope";
+import { currentScope } from "@/common/current-scope";
 
 export interface Scope {
 	/**
 	 * Internal link to the parent scope, or null if detached.
 	 * @internal
 	 */
-	readonly [$parent]: Scope | null;
+	[$parent]: Scope | null;
 
 	/**
 	 * Internal list of immediate child scopes. Set to null when the scope is disposed.
 	 * @internal
 	 */
-	readonly [$children]: Array<Scope> | null;
+	[$children]: Array<Scope> | null;
 
 	/**
 	 * Internal index within the parent's children array for efficient removal.
@@ -69,3 +70,55 @@ export const Scope: ScopeConstructor = Object.defineProperties(
 		},
 	}
 ) as any;
+
+/**
+ * Intializes a scope instance, setting the parent, index, and children properties.
+ * This will add the scope to the children of the specified parent scope, or the current scope if
+ * none is specified.
+ * @param scope
+ * @param options
+ * @internal
+ */
+export function initScope(scope: Scope, options?: ScopeOptions): void {
+	const parent = options?.scope ?? currentScope ?? null;
+	if (parent) {
+		const parentChildren = parent[$children];
+		if (parentChildren === null) {
+			throw new Error("Cannot add scope to disposed parent");
+		}
+		scope[$parent] = parent;
+		scope[$index] = parentChildren.length;
+		parentChildren.push(scope);
+	} else {
+		scope[$parent] = null;
+	}
+	scope[$children] = [];
+}
+
+/**
+ * Disposes a scope and all of its descendants, removing it from its parent if applicable.
+ * This function is not idempotent so callers should ensure the scope hasn't already been disposed.
+ * @param scope
+ * @internal
+ */
+export function disposeScope(scope: Scope): void {
+	const children = scope[$children]!;
+	scope[$children] = null;
+
+	for (let i = 0, len = children.length; i < len; i++) {
+		children[i].dispose();
+	}
+
+	const parent = scope[$parent];
+	scope[$parent] = null;
+	if (parent) {
+		const parentChildren = parent[$children];
+		if (parentChildren) {
+			const index = scope[$index];
+			const lastChild = parentChildren[parentChildren.length - 1];
+			parentChildren[index] = lastChild;
+			lastChild[$index] = index;
+			parentChildren.pop();
+		}
+	}
+}
