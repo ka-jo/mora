@@ -1,4 +1,5 @@
 import { Observable } from "@/common/types/Observable";
+import { $observer } from "../symbols";
 
 /**
  * The Observer interface defines the structure of an object used to subscribe to an

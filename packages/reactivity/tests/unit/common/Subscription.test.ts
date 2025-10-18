@@ -16,15 +16,11 @@ describe("Subscription", () => {
 
 	/**
 	 * Helper to properly initialize a subscription as it would be in real usage.
-	 * In production code, subscriptions are created via Subscription.init() which
+	 * In production code, subscriptions are created via Subscription.create() which
 	 * adds them to the subscribers array with the correct index.
 	 */
 	function createSubscription(observable = refMock, observer = observerMock): Subscription {
-		const subscription = new Subscription(observable, observer);
-		const subscribers = observable[$subscribers];
-		subscription[$subscribersIndex] = subscribers.length;
-		subscribers.push(subscription);
-		return subscription;
+		return Subscription.create(observable, observer);
 	}
 
 	describe("closed property", () => {

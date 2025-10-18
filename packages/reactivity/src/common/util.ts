@@ -39,6 +39,8 @@ export function createObserver<T>(
 		};
 	}
 	//@ts-expect-error
+	observer[$observer] = observer;
+	//@ts-expect-error
 	return (onNextOrObserver[$observer] = observer);
 }
 

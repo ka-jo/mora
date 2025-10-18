@@ -1,13 +1,13 @@
 import { $flags, $store, $subscribers, $value } from "@/common/symbols";
-import { currentContext } from "@/common/tracking-context";
 import { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
-import { getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
+import { createObserver, getPropertyDescriptor, isObject, isSymbol } from "@/common/util";
 import type { Store } from "@/Store/Store";
 import type { Ref, WritableComputedRefOptions } from "@/Ref";
 import { isRef } from "@/Ref/isRef";
 import { ComputedRef } from "@/Ref/core/ComputedRef";
 import { BaseRef } from "@/Ref/core/BaseRef";
+import { currentScope } from "@/common/current-scope";
 
 /**
  * The base store class enables the creation of a reactive object with automatic ref unwrapping via
@@ -63,7 +63,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return Subscription.init(this, onNextOrObserver, onError, onComplete);
+		return new Subscription(this, createObserver(onNextOrObserver, onError, onComplete));
 	}
 
 	[Symbol.observable](): Observable<T> {
@@ -76,7 +76,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		if (isSymbol(prop)) return target[prop];
 
 		// If it's a tracking context, we need to ensure that the property ref is initialized
-		if (currentContext) return BaseStore.initPropertyRef(this, prop).get();
+		if (currentScope) return BaseStore.initPropertyRef(this, prop).get();
 
 		const targetValue = target[prop];
 		if (isRef(targetValue)) {

@@ -45,20 +45,26 @@ export class Subscription {
 	declare [$value]?: unknown;
 
 	/**
-	 * Creates a new subscription linking an observable to an observer.
+	 * Creates a new subscription, adding an observable to the subscriber's array for an observable.
 	 *
 	 * @internal
-	 * This constructor is not called directly. Use `Observable.subscribe()` instead.
 	 *
 	 * @param observable - The observable source to subscribe to
 	 * @param observer - The observer that will receive notifications
+	 * @param dependencyIndex - Index in the dependencies array, or -1 if not tracked
 	 */
-	constructor(observable: Observable, observer: Observer<unknown>) {
+	private constructor(
+		observable: Observable,
+		observer: Observer<unknown>,
+		subscriberIndex: number,
+		dependencyIndex: number = -1
+	) {
 		this[$flags] = Flags.Enabled;
 		this[$observable] = observable;
 		this[$observer] = observer;
-		this[$subscribersIndex] = -1;
-		this[$dependenciesIndex] = -1;
+		this[$subscribersIndex] = subscriberIndex;
+		this[$dependenciesIndex] = dependencyIndex;
+		this[$value] = observable[$value];
 	}
 
 	/**
@@ -174,35 +180,21 @@ export class Subscription {
 		enabled: false,
 	}) as Subscription;
 
-	/**
-	 * Creates and initializes a new subscription for the given observable and observer.
-	 *
-	 * @internal
-	 * This method handles the subscription creation lifecycle, including adding
-	 * the subscription to the observable's notification list and handling the
-	 * case where the observable is already aborted.
-	 *
-	 * @param observable - The observable to subscribe to
-	 * @param observer - The observer to receive notifications
-	 * @returns A new subscription, or a closed subscription if the observable is aborted
-	 */
-	static init(
+	static create(
 		observable: Observable,
 		onNextOrObserver: Partial<Observer> | Observer["next"],
 		onError?: Observer["error"],
-		onComplete?: Observer["complete"]
+		onComplete?: Observer["complete"],
+		dependencyIndex: number = -1
 	): Subscription {
 		const observer = createObserver(onNextOrObserver, onError, onComplete);
 		if (observable[$flags] & Flags.Aborted) {
 			observer.complete();
 			return Subscription.CLOSED_SUBSCRIPTION;
 		}
-		const subscription = new Subscription(observable, observer);
-
 		const subscribers = observable[$subscribers];
-		subscription[$subscribersIndex] = subscribers.length;
+		const subscription = new Subscription(observable, observer, dependencyIndex);
 		subscribers.push(subscription);
-
 		return subscription;
 	}
 

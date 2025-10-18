@@ -10,12 +10,12 @@ import {
 } from "@/common/symbols";
 import { createObserver, isObject } from "@/common/util";
 import { Flags } from "@/common/flags";
-import { currentContext } from "@/common/tracking-context";
 import { Subscription } from "@/common/Subscription";
 import type { RefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
 import { isRef } from "@/Ref/isRef";
 import { BaseStore } from "@/Store/core/BaseStore";
+import { currentScope } from "@/common/current-scope";
 
 const $forwardObserver = Symbol("forward-observer");
 
@@ -23,8 +23,8 @@ const $forwardObserver = Symbol("forward-observer");
  * @internal
  */
 export class BaseRef<T = unknown> implements Ref<T, T> {
-	declare [$subscribers]: Subscription[];
 	declare [$flags]: number;
+	declare [$subscribers]: Subscription[];
 	declare [$value]: T;
 	declare [$ref]: BaseRef<T>;
 	declare [$options]?: RefOptions;
@@ -32,8 +32,8 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	declare [$forwardObserver]?: Partial<Observer<T>>;
 
 	constructor(value: T | Ref<T>, options?: RefOptions) {
-		this[$subscribers] = [];
 		this[$flags] = 0;
+		this[$subscribers] = [];
 		this[$ref] = this;
 		this[$options] = options;
 
@@ -50,8 +50,8 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	}
 
 	get(): T {
-		if (!(this[$flags] & Flags.Aborted) && currentContext) {
-			currentContext.track(this, $value);
+		if (!(this[$flags] & Flags.Aborted) && currentScope) {
+			currentScope.observe(this);
 		}
 		return this[$value];
 	}
@@ -77,7 +77,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return Subscription.init(this, onNextOrObserver, onError, onComplete);
+		return Subscription.create(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[$observable](): Ref<T, T> {

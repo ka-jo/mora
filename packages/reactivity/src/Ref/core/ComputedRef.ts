@@ -13,13 +13,20 @@ import {
 	$children,
 	$index,
 } from "@/common/symbols";
-import { popTrackingContext, pushTrackingContext, currentContext } from "@/common/tracking-context";
 import type { Observable, Observer } from "@/common/types";
 import { Subscription } from "@/common/Subscription";
 import type { ComputedRefOptions, WritableComputedRefOptions } from "@/Ref/types";
 import type { Ref } from "@/Ref/Ref";
-import { disposeScope, initScope, type Scope } from "@/Scope/Scope";
-import { currentScope } from "@/common/current-scope";
+import { disposeScope, initScope, SubscriptionScope, type Scope } from "@/Scope/Scope";
+import {
+	createDependency,
+	currentScope,
+	dependencyIndex,
+	removeDependencies,
+	reuseDependency,
+	setActiveScope,
+} from "@/common/current-scope";
+import { createObserver } from "@/common/util";
 
 /** We use this to mark a ref that hasn't been computed yet. */
 const INITIAL_VALUE: any = $value;
@@ -27,15 +34,16 @@ const INITIAL_VALUE: any = $value;
 /**
  * @internal
  */
-export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>, Scope {
+export class ComputedRef<TGet = unknown, TSet = TGet>
+	implements Ref<TGet, TSet>, SubscriptionScope
+{
 	declare [$subscribers]: Subscription[];
 	declare [$dependencies]: Subscription[];
 	declare [$flags]: number;
 	declare [$value]: TGet;
 	declare [$ref]: ComputedRef<TGet, TSet>;
 	declare [$options]: ComputedRefOptions<TGet> | WritableComputedRefOptions<TGet, TSet>;
-	declare [$observer]: Partial<Observer>;
-	declare [$compute]: () => void;
+	declare [$observer]: Observer;
 	declare [$parent]: Scope | null;
 	declare [$children]: Scope[] | null;
 	declare [$index]: number;
@@ -48,7 +56,6 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		this[$ref] = this;
 		this[$options] = options;
 		this[$observer] = ComputedRef.initObserver(this);
-		this[$compute] = ComputedRef.compute.bind(ComputedRef, this);
 
 		initScope(this, options);
 
@@ -67,12 +74,12 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			return this[$value] as TGet;
 		}
 
-		if (currentContext) {
-			currentContext.track(this, $value);
+		if (currentScope) {
+			currentScope.observe(this);
 		}
 
 		if (this[$flags] & Flags.Dirty) {
-			ComputedRef.compute(this);
+			this[$compute]();
 		}
 
 		return this[$value] as TGet;
@@ -97,7 +104,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		// in order to notify the subscriber of future values
 		if (this[$value] === INITIAL_VALUE && !(this[$flags] & Flags.Aborted))
 			try {
-				ComputedRef.compute(this);
+				this[$compute]();
 			} catch (e) {
 				// As much as possible, the compute triggered in this case should be
 				// "invisible". The subscriber should be able to think of the ref as
@@ -105,7 +112,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 				// Only calls to `get` should throw, so we swallow the error here.
 			}
 
-		return Subscription.init(this, onNextOrObserver, onError, onComplete);
+		return Subscription.create(this, onNextOrObserver, onError, onComplete);
 	}
 
 	[$observable]() {
@@ -125,7 +132,17 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 	}
 
 	observe(observable: Observable): void {
-		// No-op for now
+		if (currentScope !== this || this[$flags] & Flags.Aborted) return;
+
+		const existingDependency = this[$dependencies][dependencyIndex];
+		if (existingDependency) {
+			if (existingDependency[$observable] === observable) {
+				return reuseDependency(existingDependency);
+			} else {
+				removeDependencies(this, dependencyIndex);
+			}
+		}
+		createDependency(this, observable);
 	}
 
 	dispose(): void {
@@ -133,9 +150,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 
 		disposeScope(this);
 
-		for (const dep of this[$dependencies]) {
-			dep.unsubscribe();
-		}
+		removeDependencies(this);
 
 		Subscription.completeAll(this[$subscribers]);
 
@@ -147,27 +162,39 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		}
 	}
 
-	private static compute(ref: ComputedRef<any>): void {
+	[$compute](): void {
 		// A ref may have been queued to compute but was computed before the queue was flushed.
 		// This would be the case if `get` was called on the ref or a dependency of the ref
-		if (!(ref[$flags] & Flags.Dirty)) return;
+		if (!(this[$flags] & Flags.Dirty)) return;
 
-		ref[$flags] &= ~(Flags.Dirty | Flags.Queued);
+		this[$flags] &= ~(Flags.Dirty | Flags.Queued);
 
-		if (ref[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(ref))
+		if (this[$value] !== INITIAL_VALUE && !ComputedRef.hasOutdatedDependenciesAfterCompute(this))
 			return;
 
-		for (const dep of ref[$dependencies]) {
-			dep.unsubscribe();
-		}
+		const prevScope = currentScope;
+		const prevDependencyIndex = dependencyIndex;
 
-		pushTrackingContext(ref[$observer]);
-		const computedValue = ComputedRef.tryGet(ref);
-		ref[$dependencies] = popTrackingContext()!;
+		setActiveScope(this);
 
-		if (!Object.is(computedValue, ref[$value])) {
-			ref[$value] = computedValue;
-			Subscription.notifyAll(ref[$subscribers], computedValue);
+		try {
+			const computedValue = this[$options].get();
+
+			if (this[$dependencies].length > dependencyIndex) {
+				// remove any stale dependencies
+				removeDependencies(this, dependencyIndex);
+			}
+
+			if (!Object.is(computedValue, this[$value])) {
+				this[$value] = computedValue;
+				Subscription.notifyAll(this[$subscribers], computedValue);
+			}
+		} catch (e) {
+			if (e instanceof Error === false) e = new Error(String(e));
+
+			throw e;
+		} finally {
+			setActiveScope(prevScope, prevDependencyIndex);
 		}
 	}
 
@@ -188,12 +215,12 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 		queueMicrotask(ref[$compute]);
 	}
 
-	private static initObserver(ref: ComputedRef<any>): Partial<Observer> {
+	private static initObserver(ref: ComputedRef<any>): Observer {
 		const callback = ComputedRef.onDependencyChange.bind(ComputedRef, ref);
-		return {
+		return createObserver({
 			next: callback,
 			dirty: callback,
-		};
+		});
 	}
 
 	/**
@@ -211,31 +238,5 @@ export class ComputedRef<TGet = unknown, TSet = TGet> implements Ref<TGet, TSet>
 			if (!Object.is(dep[$observable][$value], dep[$value])) return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Attempts to get the value of a ref, catching any errors that may occur. If an error occurs,
-	 * it notifies all subscribers of the error, ensures the ref is still marked dirty, and pops
-	 * the tracking context.
-	 * @typeParam T
-	 * @param ref
-	 * @returns T
-	 */
-	private static tryGet<T>(ref: ComputedRef<T>): T {
-		try {
-			return ref[$options].get();
-		} catch (e) {
-			// We didn't get a value, so the ref should still be marked dirty
-			ref[$flags] |= Flags.Dirty;
-
-			if (e instanceof Error === false) e = new Error(String(e));
-
-			Subscription.errorAll(ref[$subscribers], e as Error);
-
-			// Ensure the tracking context is popped if an error occurs during computation
-			popTrackingContext();
-
-			throw e;
-		}
 	}
 }

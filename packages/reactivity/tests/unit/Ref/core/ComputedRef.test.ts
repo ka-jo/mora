@@ -39,15 +39,12 @@ function createMockDependency(
 		mockObservable[$compute] = vi.fn();
 	}
 
-	// Create a real subscription but override dependency tracking fields
-	const subscription = new Subscription(mockObservable, { next: vi.fn() } as any);
+	// Create a real subscription using the factory method
+	const subscription = Subscription.create(mockObservable, { next: vi.fn() } as any);
 	// Set the snapshot value to simulate what was captured during tracking
 	(subscription as any)[$value] = snapshotValue;
 	// Set a mock index to indicate it's part of a dependencies array
 	(subscription as any)[$dependenciesIndex] = 0;
-	// Add subscription to the mock observable's subscribers array so unsubscribe works
-	(subscription as any)[$subscribersIndex] = 0;
-	mockObservable[$subscribers].push(subscription);
 
 	return subscription;
 }

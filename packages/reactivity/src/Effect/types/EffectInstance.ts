@@ -1,4 +1,6 @@
-export interface EffectInstance {
+import { Scope } from "@/Scope";
+
+export interface EffectInstance extends Scope {
 	/**
 	 * Denotes if the effect will run in response to changes in dependencies.
 	 * If true, the effect will trigger anytime a dependency changes.

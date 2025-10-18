@@ -1,10 +1,18 @@
 import type { ScopeOptions, ScopeConstructor } from "@/Scope/types";
-import { $children, $index, $parent } from "@/common/symbols";
-import { Observable } from "@/common/types";
 import { BaseScope } from "@/Scope/core/BaseScope";
-import { isScope } from "./isScope";
+import { isScope } from "@/Scope/isScope";
+import { $children, $dependencies, $index, $observer, $parent } from "@/common/symbols";
+import { Observable, Observer } from "@/common/types";
 import { currentScope } from "@/common/current-scope";
+import type { Subscription } from "@/common/Subscription";
 
+/**
+ * The `Scope` interface represents a hierarchical context for tracking dependencies. Scopes can be
+ * nested, forming a tree structure where each scope can have a parent and multiple children. Scopes
+ * are used to manage the lifecycle of dependecies, allowing for automatic cleanup when a scope is
+ * disposed.
+ * @public
+ */
 export interface Scope {
 	/**
 	 * Internal link to the parent scope, or null if detached.
@@ -50,6 +58,24 @@ export interface Scope {
 	 * the scope isn't actively collecting dependencies.
 	 */
 	observe(observable: Observable): void;
+}
+
+/**
+ * The `SubscriptionScope` interface is an internal extension of the `Scope` interface that is used
+ * to manage subscriptions to observables. It includes additional properties for tracking active
+ * subscriptions and the observer used for subscribing to observables.
+ * @internal
+ */
+export interface SubscriptionScope extends Scope {
+	/**
+	 * The active subscriptions to this scope's observables
+	 */
+	[$dependencies]: Array<Subscription>;
+
+	/**
+	 * The observer used to subscribe to this scope's observables
+	 */
+	[$observer]: Observer;
 }
 
 /**
