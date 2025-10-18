@@ -75,7 +75,7 @@ export class Subscription {
 	 * disabled subscriptions, which can be re-enabled.
 	 */
 	get closed(): boolean {
-		return (this[$flags] & Flags.Aborted) === Flags.Aborted;
+		return (this[$flags] & Flags.Disposed) === Flags.Disposed;
 	}
 
 	/**
@@ -101,7 +101,7 @@ export class Subscription {
 	 * Calling `unsubscribe()` multiple times is safe and will be ignored.
 	 */
 	unsubscribe(): void {
-		if (this[$flags] & Flags.Aborted) return;
+		if (this[$flags] & Flags.Disposed) return;
 
 		const subscribers = this[$observable][$subscribers];
 		const index = this[$subscribersIndex];
@@ -129,7 +129,7 @@ export class Subscription {
 	 * receive subsequent notifications.
 	 */
 	enable(): void {
-		if (this[$flags] & (Flags.Enabled | Flags.Aborted)) return;
+		if (this[$flags] & (Flags.Enabled | Flags.Disposed)) return;
 
 		this[$flags] |= Flags.Enabled;
 
@@ -155,7 +155,7 @@ export class Subscription {
 	 * depending on iteration order.
 	 */
 	disable(): void {
-		if (!(this[$flags] & Flags.Enabled) || this[$flags] & Flags.Aborted) return;
+		if (!(this[$flags] & Flags.Enabled) || this[$flags] & Flags.Disposed) return;
 
 		this[$flags] &= ~Flags.Enabled;
 
@@ -172,7 +172,7 @@ export class Subscription {
 
 	/** @internal Singleton representing a permanently closed subscription */
 	private static readonly CLOSED_SUBSCRIPTION: Subscription = Object.freeze({
-		[$flags]: Flags.Aborted,
+		[$flags]: Flags.Disposed,
 		unsubscribe: NO_OP,
 		enable: NO_OP,
 		disable: NO_OP,
@@ -188,7 +188,7 @@ export class Subscription {
 		dependencyIndex: number = -1
 	): Subscription {
 		const observer = createObserver(onNextOrObserver, onError, onComplete);
-		if (observable[$flags] & Flags.Aborted) {
+		if (observable[$flags] & Flags.Disposed) {
 			observer.complete();
 			return Subscription.CLOSED_SUBSCRIPTION;
 		}
@@ -209,7 +209,7 @@ export class Subscription {
 	 * @param subscription - The subscription to clean up
 	 */
 	static cleanup(subscription: Subscription) {
-		subscription[$flags] = Flags.Aborted;
+		subscription[$flags] = Flags.Disposed;
 		subscription[$observable] = null as any;
 		subscription[$observer] = null as any;
 		subscription[$subscribersIndex] = -1;
@@ -258,7 +258,7 @@ export class Subscription {
 		const length = subscribers.length;
 		for (let i = 0; i < length; i++) {
 			const subscription = subscribers[i];
-			subscription[$flags] = Flags.Aborted;
+			subscription[$flags] = Flags.Disposed;
 			subscription[$observer].complete();
 			subscription[$observable] = null as any;
 			subscription[$observer] = null as any;

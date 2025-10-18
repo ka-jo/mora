@@ -464,7 +464,7 @@ describe("ComputedRef", () => {
 			const ref = new ComputedRef({ get: () => 0, signal: controller.signal });
 
 			// Ref should be immediately disposed
-			expect(ref[$flags] & Flags.Aborted).toBe(Flags.Aborted);
+			expect(ref[$flags] & Flags.Disposed).toBe(Flags.Disposed);
 		});
 
 		it("should not notify subscribers when created with already-aborted signal", () => {

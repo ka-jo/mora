@@ -58,7 +58,7 @@ export class BaseEffect implements EffectInstance {
 	}
 
 	*observables(): IterableIterator<Observable> {
-		if (this[$flags] & Flags.Aborted) return;
+		if (this[$flags] & Flags.Disposed) return;
 
 		for (const subscription of this[$dependencies]) {
 			yield subscription[$observable];
@@ -70,7 +70,7 @@ export class BaseEffect implements EffectInstance {
 	}
 
 	observe(observable: Observable): void {
-		if (currentScope !== this || this[$flags] & Flags.Aborted) return;
+		if (currentScope !== this || this[$flags] & Flags.Disposed) return;
 
 		const existingDependency = this[$dependencies][dependencyIndex];
 		if (existingDependency) {
@@ -84,9 +84,9 @@ export class BaseEffect implements EffectInstance {
 	}
 
 	dispose(): void {
-		if (this[$flags] & Flags.Aborted) return;
+		if (this[$flags] & Flags.Disposed) return;
 
-		this[$flags] = Flags.Aborted;
+		this[$flags] = Flags.Disposed;
 
 		disposeScope(this);
 

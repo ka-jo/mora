@@ -61,7 +61,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 		if (options.signal) {
 			if (options.signal.aborted) {
-				this[$flags] |= Flags.Aborted;
+				this[$flags] |= Flags.Disposed;
 			} else {
 				this.dispose = this.dispose.bind(this);
 				options.signal.addEventListener("abort", this.dispose);
@@ -70,7 +70,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	get(): TGet {
-		if (this[$flags] & Flags.Aborted) {
+		if (this[$flags] & Flags.Disposed) {
 			return this[$value] as TGet;
 		}
 
@@ -86,7 +86,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	set(value: TSet): boolean {
-		if (this[$flags] & Flags.Aborted) return false;
+		if (this[$flags] & Flags.Disposed) return false;
 
 		if (!("set" in this[$options]))
 			throw new TypeError("Cannot set a computed ref defined without a setter");
@@ -102,7 +102,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	): Subscription {
 		// If the ref hasn't been computed yet, we need to compute the current value
 		// in order to notify the subscriber of future values
-		if (this[$value] === INITIAL_VALUE && !(this[$flags] & Flags.Aborted))
+		if (this[$value] === INITIAL_VALUE && !(this[$flags] & Flags.Disposed))
 			try {
 				this[$compute]();
 			} catch (e) {
@@ -120,7 +120,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	*observables(): IterableIterator<Observable> {
-		if (this[$flags] & Flags.Aborted) return;
+		if (this[$flags] & Flags.Disposed) return;
 
 		for (const subscription of this[$dependencies]) {
 			yield subscription[$observable];
@@ -132,7 +132,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	observe(observable: Observable): void {
-		if (currentScope !== this || this[$flags] & Flags.Aborted) return;
+		if (currentScope !== this || this[$flags] & Flags.Disposed) return;
 
 		const existingDependency = this[$dependencies][dependencyIndex];
 		if (existingDependency) {
@@ -146,7 +146,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	}
 
 	dispose(): void {
-		if (this[$flags] & Flags.Aborted) return;
+		if (this[$flags] & Flags.Disposed) return;
 
 		disposeScope(this);
 
@@ -154,7 +154,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 		Subscription.completeAll(this[$subscribers]);
 
-		this[$flags] |= Flags.Aborted;
+		this[$flags] |= Flags.Disposed;
 		this[$dependencies] = null as any;
 
 		if (this[$options]?.signal) {

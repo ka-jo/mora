@@ -8,7 +8,7 @@ export const enum Flags {
 	Enabled = 1 << 0,
 
 	/** Indicates an observable or subscription has been permanently closed/disposed */
-	Aborted = 1 << 1,
+	Disposed = 1 << 1,
 
 	/**
 	 * Indicates a computed observable needs re-evaluation because its dependencies changed.

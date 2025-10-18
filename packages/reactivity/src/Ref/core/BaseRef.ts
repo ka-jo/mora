@@ -41,7 +41,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		if (options?.signal) {
 			if (options.signal.aborted) {
-				this[$flags] |= Flags.Aborted;
+				this[$flags] |= Flags.Disposed;
 			} else {
 				this.dispose = this.dispose.bind(this);
 				options.signal.addEventListener("abort", this.dispose);
@@ -50,7 +50,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 	}
 
 	get(): T {
-		if (!(this[$flags] & Flags.Aborted) && currentScope) {
+		if (!(this[$flags] & Flags.Disposed) && currentScope) {
 			currentScope.observe(this);
 		}
 		return this[$value];
@@ -65,7 +65,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		BaseRef.initValue(this, value);
 
-		if (this[$flags] & Flags.Aborted) return true;
+		if (this[$flags] & Flags.Disposed) return true;
 
 		Subscription.notifyAll(this[$subscribers], value);
 
@@ -89,7 +89,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 
 		Subscription.completeAll(this[$subscribers]);
 
-		this[$flags] |= Flags.Aborted;
+		this[$flags] |= Flags.Disposed;
 		if (this[$options]?.signal) {
 			this[$options].signal.removeEventListener("abort", this.dispose);
 		}
@@ -140,7 +140,7 @@ export class BaseRef<T = unknown> implements Ref<T, T> {
 			target[$value] = value;
 		}
 
-		if (target[$flags] & Flags.Aborted) return;
+		if (target[$flags] & Flags.Disposed) return;
 
 		Subscription.notifyAll(target[$subscribers], value);
 	}
