@@ -204,22 +204,35 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	 * @returns
 	 */
 	private static onDependencyChange(ref: ComputedRef<any>) {
-		ref[$flags] |= Flags.Dirty;
-		// If the ref is already queued or has no active susbscribers, we don't need to queue it
-		if (ref[$flags] & Flags.Queued || ref[$subscribers].length === 0) return;
+		ComputedRef.onDependencyDirty(ref);
+
+		if (ref[$flags] & Flags.Queued) return;
 
 		ref[$flags] |= Flags.Queued;
-
-		Subscription.dirtyAll(ref[$subscribers]);
 
 		queueMicrotask(ref[$compute]);
 	}
 
+	/**
+	 * Callback to use when an observable dependency is marked dirty but hasn't recomputed yet.
+	 * We propagate the dirty flag to subscribers but don't queue recomputation since the
+	 * dependency's value hasn't actually changed yet.
+	 * @param ref - The computed ref to be notified
+	 * @returns
+	 */
+	private static onDependencyDirty(ref: ComputedRef<any>) {
+		// If already dirty, we've already propagated the dirty signal downstream
+		if (ref[$flags] & Flags.Dirty) return;
+
+		ref[$flags] |= Flags.Dirty;
+
+		Subscription.dirtyAll(ref[$subscribers]);
+	}
+
 	private static initObserver(ref: ComputedRef<any>): Observer {
-		const callback = ComputedRef.onDependencyChange.bind(ComputedRef, ref);
 		return createObserver({
-			next: callback,
-			dirty: callback,
+			next: ComputedRef.onDependencyChange.bind(ComputedRef, ref),
+			dirty: ComputedRef.onDependencyDirty.bind(ComputedRef, ref),
 		});
 	}
 
@@ -230,12 +243,14 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 	 * @returns true if any of the dependencies are outdated, false otherwise
 	 */
 	private static hasOutdatedDependenciesAfterCompute(ref: ComputedRef): boolean {
-		for (const dep of ref[$dependencies]) {
+		for (let i = 0, len = ref[$dependencies].length; i < len; i++) {
+			const dep = ref[$dependencies][i];
+			const observable = dep[$observable];
 			// If dependency is dirty, recompute it first (only computable observables can be dirty)
-			if (dep[$observable][$flags] & Flags.Dirty) dep[$observable][$compute]!();
+			if (observable[$flags] & Flags.Dirty) observable[$compute]!();
 
 			// Check if observable value has changed since this dependency was created
-			if (!Object.is(dep[$observable][$value], dep[$value])) return true;
+			if (!Object.is(observable[$value], dep[$value])) return true;
 		}
 		return false;
 	}
