@@ -8,11 +8,13 @@ import {
 	$children,
 	$index,
 	$observable,
+	$effect,
 } from "@/common/symbols";
 import { Observable, Observer } from "@/common/types";
-import { EffectInstance } from "@/Effect/types";
+import { Effect } from "@/Effect/Effect";
+import { EffectOptions } from "@/Effect/types";
 import { Subscription } from "@/common/Subscription";
-import { disposeScope, Scope } from "@/Scope";
+import { disposeScope, initScope, Scope } from "@/Scope";
 import {
 	createDependency,
 	currentScope,
@@ -22,27 +24,30 @@ import {
 	setActiveScope,
 } from "@/common/current-scope";
 import { createObserver } from "@/common/util";
-import { create } from "domain";
 
-export class BaseEffect implements EffectInstance {
+export class BaseEffect implements Effect {
 	declare [$flags]: number;
 	declare [$dependencies]: Subscription[];
 	declare [$observer]: Observer;
 	declare [$parent]: Scope | null;
 	declare [$children]: Array<Scope> | null;
 	declare [$index]: number;
+	declare [$effect]: this;
 
 	declare run: () => void;
 
-	constructor(fn: () => void) {
+	constructor(fn: () => void, options?: EffectOptions) {
 		this.run = fn;
 		this[$flags] = Flags.Enabled;
 		this[$dependencies] = [];
 		this[$observer] = createObserver({
 			next: BaseEffect.onDependencyChange.bind(BaseEffect, this),
 		});
+		this[$effect] = this;
 
 		this[$compute]();
+
+		initScope(this, options);
 	}
 
 	get enabled(): boolean {
@@ -126,6 +131,6 @@ export class BaseEffect implements EffectInstance {
 		if (effect[$flags] & Flags.Queued) return;
 
 		effect[$flags] |= Flags.Queued;
-		queueMicrotask(effect[$compute]);
+		queueMicrotask(() => effect[$compute]());
 	}
 }

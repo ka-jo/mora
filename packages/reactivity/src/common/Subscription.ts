@@ -57,7 +57,7 @@ export class Subscription {
 		observable: Observable,
 		observer: Observer<unknown>,
 		subscriberIndex: number,
-		dependencyIndex: number = -1
+		dependencyIndex: number
 	) {
 		this[$flags] = Flags.Enabled;
 		this[$observable] = observable;
@@ -193,7 +193,12 @@ export class Subscription {
 			return Subscription.CLOSED_SUBSCRIPTION;
 		}
 		const subscribers = observable[$subscribers];
-		const subscription = new Subscription(observable, observer, dependencyIndex);
+		const subscription = new Subscription(
+			observable,
+			observer,
+			subscribers.length,
+			dependencyIndex
+		);
 		subscribers.push(subscription);
 		return subscription;
 	}

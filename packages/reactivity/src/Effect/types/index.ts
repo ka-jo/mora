@@ -1,1 +1,2 @@
-export * from "./EffectInstance";
+export * from "./EffectConstructor";
+export * from "./EffectOptions";

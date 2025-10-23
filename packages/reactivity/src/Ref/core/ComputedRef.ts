@@ -210,7 +210,7 @@ export class ComputedRef<TGet = unknown, TSet = TGet>
 
 		ref[$flags] |= Flags.Queued;
 
-		queueMicrotask(ref[$compute]);
+		queueMicrotask(() => ref[$compute]());
 	}
 
 	/**

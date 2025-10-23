@@ -63,7 +63,7 @@ export class BaseStore<T extends Record<PropertyKey, unknown> = Record<PropertyK
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return new Subscription(this, createObserver(onNextOrObserver, onError, onComplete));
+		return Subscription.create(this, createObserver(onNextOrObserver, onError, onComplete));
 	}
 
 	[Symbol.observable](): Observable<T> {

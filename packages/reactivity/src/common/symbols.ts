@@ -12,6 +12,7 @@ export const $dependencies: unique symbol = Symbol("dependencies");
 export const $compute: unique symbol = Symbol("compute");
 export const $observer: unique symbol = Symbol("observer");
 export const $store: unique symbol = Symbol("store");
+export const $effect: unique symbol = Symbol("effect");
 
 /**
  * Internal link to a scope's parent. Not part of the public API.

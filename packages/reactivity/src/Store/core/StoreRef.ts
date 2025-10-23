@@ -29,7 +29,7 @@ export class StoreRef<T = unknown> implements Ref<T, T> {
 		onError?: Observer<T>["error"],
 		onComplete?: Observer<T>["complete"]
 	): Subscription {
-		return new Subscription(this, createObserver(onNextOrObserver, onError, onComplete));
+		return Subscription.create(this, createObserver(onNextOrObserver, onError, onComplete));
 	}
 
 	[Symbol.observable](): Ref<T, T> {
