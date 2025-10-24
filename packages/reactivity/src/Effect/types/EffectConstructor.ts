@@ -1,9 +1,10 @@
 import { EffectOptions } from "@/Effect/types";
 import { Effect } from "@/Effect/Effect";
+import { Scope } from "@/Scope";
 
 export interface EffectConstructor {
-	(fn: () => void, options?: EffectOptions): EffectConstructor;
-	new (fn: () => void, options?: EffectOptions): Effect;
+	(fn: (scope: Scope) => void, options?: EffectOptions): EffectConstructor;
+	new (fn: (scope: Scope) => void, options?: EffectOptions): Effect;
 	/**
 	 * Type guard to check if a value is an Effect
 	 * @param value

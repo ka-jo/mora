@@ -23,12 +23,13 @@ export interface Effect extends Scope {
 	 * @remarks
 	 * Running the effect in this manner bypasses any dependency tracking and
 	 * calls the function passed to the effect directly.
+	 * @param scope - A reference to the active scope (the effect itself)
 	 */
-	run(): void;
+	run(scope: Scope): void;
 }
 
 export const Effect: EffectConstructor = Object.defineProperties(
-	function Effect(fn: () => void, options?: EffectOptions) {
+	function Effect(fn: (scope: Scope) => void, options?: EffectOptions) {
 		return new BaseEffect(fn, options);
 	},
 	{

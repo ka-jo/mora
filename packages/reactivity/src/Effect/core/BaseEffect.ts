@@ -34,9 +34,9 @@ export class BaseEffect implements Effect {
 	declare [$index]: number;
 	declare [$effect]: this;
 
-	declare run: () => void;
+	declare run: (scope: Scope) => void;
 
-	constructor(fn: () => void, options?: EffectOptions) {
+	constructor(fn: (scope: Scope) => void, options?: EffectOptions) {
 		this.run = fn;
 		this[$flags] = Flags.Enabled;
 		this[$dependencies] = [];
@@ -112,7 +112,7 @@ export class BaseEffect implements Effect {
 		setActiveScope(this);
 
 		try {
-			this.run();
+			this.run(this);
 
 			if (this[$dependencies].length > dependencyIndex) {
 				// remove any stale dependencies
